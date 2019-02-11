@@ -1,0 +1,2414 @@
+import pygame
+import random
+import time
+from tkinter import *
+
+class Player:                   #class player
+    def __init__(self):
+        self.name = ""
+        self.nick = ""
+        self.none = 0
+
+    def get_Info(self):#obtains the player's info
+        return self.name,self.nick
+
+    def set_Info(self, name, nick,none):#gives the player the name and nick (the "none" atribute is useless)
+        self.name = name
+        self.nick = nick
+        self.none = none
+
+#---------------------------------------------------------------------------------------------------------------------
+
+class Cursor(pygame.Rect):          #class Cursor
+    def __init__(self):
+        pygame.Rect.__init__(self, 0, 0, 1, 1)
+
+    def update(self):                   #updates the cursor
+        self.left, self.top = pygame.mouse.get_pos()
+
+#---------------------------------------------------------------------------------------------------------------------
+
+class ButtonPy(pygame.sprite.Sprite):#class Button
+    def __init__(self, imageStart, imageScore, x=100, y=100):
+        self.imageNorm = imageStart
+        self.imageSelect = imageScore
+        self.imageActual = self.imageNorm
+        self.rect = self.imageActual.get_rect()
+        self.rect.left, self.rect.top = (x, y)
+
+    def update(self,screen,cursor):#updates the button images
+        if cursor.colliderect(self.rect):
+            self.imageActual = self.imageSelect
+        else:
+            self.imageActual = self.imageNorm
+
+        screen.blit(self.imageActual, self.rect)
+
+#---------------------------------------------------------------------------------------------------------------------
+
+class Card():#class Button
+    def __init__(self, imageStart, imageScore, x=100, y=100):
+        self.imageNorm = imageStart
+        self.imageSelect = imageScore
+        self.imageActual = self.imageNorm
+        self.imageChange = self.imageSelect
+        self.rect = self.imageActual.get_rect()
+        self.rect.left, self.rect.top = (x, y)
+        self.rect2 = self.imageChange.get_rect()
+        self.rect2.left, self.rect2.top = (x, y)
+
+    def update(self,screen):                     #updates the button images
+        self.imageActual = self.imageChange
+        if self.imageChange == self.imageNorm:
+            self.imageChange = self.imageSelect
+        else:
+            self.imageChange = self.imageNorm
+        screen.blit(self.imageChange, self.rect2)
+        screen.blit(self.imageActual, self.rect)
+
+    def update1(self,screen):
+        screen.blit(self.imageActual,self.rect)
+        screen.blit(self.imageChange, self.rect2)
+
+    def set_position(self,x,y):
+        self.rect.left, self.rect.top = (x, y)
+        self.rect2.left, self.rect2.top = (x, y)
+
+#---------------------------------------------------------------------------------------------------------------------
+
+players = []            #contains all the players
+games = []                  #contains all the matches
+games_Score = []        #contains the game's matches organized according to their points
+games_Time = []             #contains the game's matches organized according to their time.
+
+#---------------------------------------------------------------------------------------------------------------------
+
+#these are the game's matrixes:
+
+matrix10 = [["null","null","null","null"],
+          ["null","null","null","null"],
+                 ["null","null"]]
+
+matrix20 = [["null","null","null","null","null"],
+            ["null","null","null","null","null"],
+            ["null","null","null","null","null"],
+            ["null","null","null","null","null"]]
+
+matrix30 = [["null","null","null","null","null","null"],
+            ["null","null","null","null","null","null"],
+            ["null","null","null","null","null","null"],
+            ["null","null","null","null","null","null"],
+            ["null","null","null","null","null","null"]]
+
+#---------------------------------------------------------------------------------------------------------------------
+
+def players_to_File():                          #writes the players file with the info that's entered
+    file = open("Players List.txt", "w")
+    file.write("")
+    for x in players:
+        na,ni =  x.get_Info()       #obtains the tuple with the player's name and nick
+        file.write(na + " " + ni + " "+str(1)+"\n")
+    file.close()
+
+#---------------------------------------------------------------------------------------------------------------------
+
+def games_to_File():     #this method writes the info to the file
+    file = open("Games.txt", "w")
+    file.write("")
+    for x in games:     #loops the method
+        name = x["Name"]
+        nick = x["Nick"]
+        num = x["Num"]
+        score = x["Score"]
+        time = x["Time"]
+        status= x["Status"]
+        file.write(name + " " + nick + " "+str(num)+" "+str(score)+" "+str(time)+" "+status+"\n")       #sets the info
+
+    file.close()
+
+#----------------------------------------------------------------------------------------------------------------------
+
+def load_Players_File():        #the following method loads the players to the .txt file
+    players.clear()             #clears the list so no player is added more than one time
+    file = open("Players List.txt", "r")
+    for x in file:      #this is the loop to write each line with the data
+        list1 = x.split(" ")        #it refers to a line of the file, which then converts into a list
+        del list1[-1]           #deletes the last position of the list and the "\n"
+        player = Player()       #creates the object
+        player.set_Info(list1[0],list1[1],1)        #sets the player info
+        players.append(player)                      #adds the object to the list
+    file.close()
+
+#----------------------------------------------------------------------------------------------------------------------
+
+def load_games_File():          #this loads the info from the file to the list
+    games.clear()
+    file = open("Games.txt", "r")
+    for x in file:          #loops the method
+        list1 = x.split(" ")
+        list2 = list1[-1].split("\n")       #"list2" contains only the status (W/L)
+        del list1[-1]                       #deletes the status;
+        list1.append(list2[0])             #so it then adds it again without the "\n"
+        newGame = {}
+        newGame["Name"] = list1[0]          #from now on, it gets the info
+        newGame["Nick"] = list1[1]
+        newGame["Num"] = float(list1[2])
+        newGame["Score"] = int(list1[3])
+        newGame["Time"] = float(list1[4])
+        newGame["Status"] = list1[5]
+        games.append(newGame)               #adds the match to the list
+    file.close()
+    for y in games:
+        if y == {}:
+            games.remove(y)
+
+#---------------------------------------------------------------------------------------------------------------------
+
+def thirty_2P(name1, nick1, name2, nick2):  # metodo principal
+    pygame.init()  # inicialia los procesos de pygame
+    screen = pygame.display.set_mode([1000, 700])  # se crea un ventana
+    pygame.display.set_caption("Memory")  # se le otorga un titulo a la ventana
+    exit = False  # variable necesaria para mantener el ciclo donde se realizan las acciones
+    cursor = Cursor()  # crea un cursor
+    clock = pygame.time.Clock()  # crea un reloj
+    back = pygame.image.load("Images/backW.jpg").convert()  # imagen de la interfaz
+    back = pygame.transform.scale(back, (1000, 700))
+    posX, posY = 0, 0
+    font1 = pygame.font.SysFont("Castellar", 20, False, False)
+    music = pygame.mixer.Sound("Pokemon.wav")
+
+    backCart = pygame.image.load("Images/backc.jpg").convert()
+    backCart = pygame.transform.scale(backCart, (70, 90))
+    image1 = pygame.image.load("Images/16.jpg").convert()
+    image1 = pygame.transform.scale(image1, (70, 90))
+    image2 = pygame.image.load("Images/17.jpg").convert()
+    image2 = pygame.transform.scale(image2, (70, 90))
+    image3 = pygame.image.load("Images/18.jpg").convert()
+    image3 = pygame.transform.scale(image3, (70, 90))
+    image4 = pygame.image.load("Images/19.jpg").convert()
+    image4 = pygame.transform.scale(image4, (70, 90))
+    image5 = pygame.image.load("Images/20.jpg").convert()
+    image5 = pygame.transform.scale(image5, (70, 90))
+    image6 = pygame.image.load("Images/21.jpg").convert()
+    image6 = pygame.transform.scale(image6, (70, 90))
+    image7 = pygame.image.load("Images/23.jpg").convert()
+    image7 = pygame.transform.scale(image7, (70, 90))
+    image8 = pygame.image.load("Images/24.jpg").convert()
+    image8 = pygame.transform.scale(image8, (70, 90))
+    image9 = pygame.image.load("Images/25.jpg").convert()
+    image9 = pygame.transform.scale(image9, (70, 90))
+    image10 = pygame.image.load("Images/26.jpg").convert()
+    image10 = pygame.transform.scale(image10, (70, 90))
+    image11 = pygame.image.load("Images/27.jpg").convert()
+    image11 = pygame.transform.scale(image11, (70, 90))
+    image12 = pygame.image.load("Images/28.jpg").convert()
+    image12 = pygame.transform.scale(image12, (70, 90))
+    image13 = pygame.image.load("Images/29.jpg").convert()
+    image13 = pygame.transform.scale(image13, (70, 90))
+    image14 = pygame.image.load("Images/30.jpg").convert()
+    image14 = pygame.transform.scale(image14, (70, 90))
+    image15 = pygame.image.load("Images/31.jpg").convert()
+    image15 = pygame.transform.scale(image15, (70, 90))
+
+    card1A = Card(image1, backCart)
+    card1B = Card(image1, backCart)
+    card2A = Card(image2, backCart)
+    card2B = Card(image2, backCart)
+    card3A = Card(image3, backCart)
+    card3B = Card(image3, backCart)
+    card4A = Card(image4, backCart)
+    card4B = Card(image4, backCart)
+    card5A = Card(image5, backCart)
+    card5B = Card(image5, backCart)
+    card6A = Card(image6, backCart)
+    card6B = Card(image6, backCart)
+    card7A = Card(image7, backCart)
+    card7B = Card(image7, backCart)
+    card8A = Card(image8, backCart)
+    card8B = Card(image8, backCart)
+    card9A = Card(image9, backCart)
+    card9B = Card(image9, backCart)
+    card10A = Card(image10, backCart)
+    card10B = Card(image10, backCart)
+    card11A = Card(image11, backCart)
+    card11B = Card(image11, backCart)
+    card12A = Card(image12, backCart)
+    card12B = Card(image12, backCart)
+    card13A = Card(image13, backCart)
+    card13B = Card(image13, backCart)
+    card14A = Card(image14, backCart)
+    card14B = Card(image14, backCart)
+    card15A = Card(image15, backCart)
+    card15B = Card(image15, backCart)
+
+    cardList = [card1A, card1B, card2A, card2B, card3A, card3B, card4A, card4B, card5A, card5B,
+                card6A, card6B, card7A, card7B, card8A, card8B, card9A, card9B, card10A, card10B,
+                card11A, card11B, card12A, card12B, card13A, card13B, card14A, card14B, card15A, card15B]
+
+    i = 0
+    j = 0
+    while len(cardList) != 0:
+        card = random.choice(cardList)
+        if j == 6:
+            j = 0
+        elif matrix30[i][0] != "null" and matrix30[i][1] != "null" and matrix30[i][2] != "null" and matrix30[i][3] != \
+                "null" and matrix30[i][4] != "null" and matrix30[i][5] != "null":
+            i += 1
+        else:
+            if matrix30[i][j] == "null":
+                matrix30[i][j] = card
+                cardList.remove(card)
+                j+=1
+
+    k = 0
+    l = 0
+    pos1 = 100
+    pos2 = 70
+    while k < 5:
+        while l < 6:
+            matrix30[k][l].set_position(pos1, pos2)
+            l += 1
+            pos1 += 150
+        k += 1
+        l = 0
+        pos1 = 100
+        pos2 += 130
+
+
+    couples = 0
+    lista1 = []
+    match1 = {}
+    match1["Name"] = name1
+    match1["Nick"] = nick1
+    match1["Num"] = 1
+    match1["Score"] = 0
+    match1["Time"] = 0
+    match1["Status"] = ""
+
+    match2 = {}
+    match2["Name"] = name2
+    match2["Nick"] = nick2
+    match2["Num"] = 1
+    match2["Score"] = 0
+    match2["Time"] = 0
+    match2["Status"] = ""
+
+    turn = match1["Name"]
+    music.play()
+    while exit != True:  # this loop is where all the processes are done
+        seg = pygame.time.get_ticks() / 1000
+        if couples == 15:
+            exit = True
+
+        elif seg >= 240:
+            exit = True
+
+        elif len(lista1) == 2:
+            time.sleep(0.31)
+            if lista1[0].imageNorm == lista1[1].imageNorm:
+                couples += 1
+                if turn == match1["Name"]:
+                    match1["Score"] += 10
+                    turn = match2["Name"]
+                    lista1.clear()
+                else:
+                    match2["Score"] += 10
+                    turn = match1["Name"]
+                    lista1.clear()
+            else:
+                lista1[0].update(screen)
+                lista1[1].update(screen)
+                lista1.clear()
+                if turn == match1["Name"]:
+                    turn = match2["Name"]
+                    lista1.clear()
+                else:
+                    turn = match1["Name"]
+                    lista1.clear()
+
+        for event in pygame.event.get():  # recorre la lista de los eventos posibles en pygame
+
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                if cursor.colliderect(card1A.rect):
+                    card1A.update(screen)
+                    lista1.append(card1A)
+
+                elif cursor.colliderect(card1B.rect):
+                    card1B.update(screen)
+                    lista1.append(card1B)
+
+                elif cursor.colliderect(card2A.rect):
+                    card2A.update(screen)
+                    lista1.append(card2A)
+
+                elif cursor.colliderect(card2B.rect):
+                    card2B.update(screen)
+                    lista1.append(card2B)
+
+                elif cursor.colliderect(card3A.rect):
+                    card3A.update(screen)
+                    lista1.append(card3A)
+
+                elif cursor.colliderect(card3B.rect):
+                    card3B.update(screen)
+                    lista1.append(card3B)
+
+                elif cursor.colliderect(card4A.rect):
+                    card4A.update(screen)
+                    lista1.append(card4A)
+
+                elif cursor.colliderect(card4B.rect):
+                    card4B.update(screen)
+                    lista1.append(card4B)
+
+                elif cursor.colliderect(card5A.rect):
+                    card5A.update(screen)
+                    lista1.append(card5A)
+
+                elif cursor.colliderect(card5B.rect):
+                    card5B.update(screen)
+                    lista1.append(card5B)
+
+                if cursor.colliderect(card6A.rect):
+                    card6A.update(screen)
+                    lista1.append(card6A)
+
+                elif cursor.colliderect(card6B.rect):
+                    card6B.update(screen)
+                    lista1.append(card6B)
+
+                elif cursor.colliderect(card7A.rect):
+                    card7A.update(screen)
+                    lista1.append(card7A)
+
+                elif cursor.colliderect(card7B.rect):
+                    card7B.update(screen)
+                    lista1.append(card7B)
+
+                elif cursor.colliderect(card8A.rect):
+                    card8A.update(screen)
+                    lista1.append(card8A)
+
+                elif cursor.colliderect(card8B.rect):
+                    card8B.update(screen)
+                    lista1.append(card8B)
+
+                elif cursor.colliderect(card9A.rect):
+                    card9A.update(screen)
+                    lista1.append(card9A)
+
+                elif cursor.colliderect(card9B.rect):
+                    card9B.update(screen)
+                    lista1.append(card9B)
+
+                elif cursor.colliderect(card10A.rect):
+                    card10A.update(screen)
+                    lista1.append(card10A)
+
+                elif cursor.colliderect(card10B.rect):
+                    card10B.update(screen)
+                    lista1.append(card10B)
+
+                if cursor.colliderect(card11A.rect):
+                    card11A.update(screen)
+                    lista1.append(card11A)
+
+                elif cursor.colliderect(card11B.rect):
+                    card11B.update(screen)
+                    lista1.append(card11B)
+
+                elif cursor.colliderect(card12A.rect):
+                    card12A.update(screen)
+                    lista1.append(card12A)
+
+                elif cursor.colliderect(card12B.rect):
+                    card12B.update(screen)
+                    lista1.append(card12B)
+
+                elif cursor.colliderect(card13A.rect):
+                    card13A.update(screen)
+                    lista1.append(card13A)
+
+                elif cursor.colliderect(card13B.rect):
+                    card13B.update(screen)
+                    lista1.append(card13B)
+
+                elif cursor.colliderect(card14A.rect):
+                    card14A.update(screen)
+                    lista1.append(card14A)
+
+                elif cursor.colliderect(card14B.rect):
+                    card14B.update(screen)
+                    lista1.append(card14B)
+
+                elif cursor.colliderect(card15A.rect):
+                    card15A.update(screen)
+                    lista1.append(card15A)
+
+                elif cursor.colliderect(card15B.rect):
+                    card15B.update(screen)
+                    lista1.append(card15B)
+
+            elif event.type == pygame.QUIT:  # needed validation to terminate the process
+                exit = True
+
+        screen.blit(back, (posX, posY))
+        clock.tick(20)  # measures the fps
+        cursor.update()  # updates the cursor on the screen
+        card1A.update1(screen)
+        card1B.update1(screen)
+        card2A.update1(screen)
+        card2B.update1(screen)
+        card3A.update1(screen)
+        card3B.update1(screen)
+        card4A.update1(screen)
+        card4B.update1(screen)
+        card5A.update1(screen)
+        card5B.update1(screen)
+        card6A.update1(screen)
+        card6B.update1(screen)
+        card7A.update1(screen)
+        card7B.update1(screen)
+        card8A.update1(screen)
+        card8B.update1(screen)
+        card9A.update1(screen)
+        card9B.update1(screen)
+        card10A.update1(screen)
+        card10B.update1(screen)
+        card11A.update1(screen)
+        card11B.update1(screen)
+        card12A.update1(screen)
+        card12B.update1(screen)
+        card13A.update1(screen)
+        card13B.update1(screen)
+        card14A.update1(screen)
+        card14B.update1(screen)
+        card15A.update1(screen)
+        card15B.update1(screen)
+
+        seg = str(seg)
+        contador = font1.render(seg, 0, (255, 255, 255))
+        screen.blit(contador, (800, 10))
+        text1 = "Name:"
+        text1 = font1.render(text1, 0, (255, 255, 255))
+        screen.blit(text1, (10, 10))
+        Nick1 = font1.render(match1["Nick"], 0, (255, 255, 255))
+        screen.blit(Nick1, (120, 10))
+        text3 = "Score:"
+        text3 = font1.render(text3, 0, (255, 255, 255))
+        screen.blit(text3, (350, 10))
+        screen.blit(text3, (350, 40))
+        Score1 = str(match1["Score"])
+        Score1 = font1.render(Score1, 0, (255, 255, 255))
+        screen.blit(Score1, (470, 10))
+        text4 = "Time:"
+        text4 = font1.render(text4, 0, (255, 255, 255))
+        screen.blit(text4, (700, 10))
+        text2 = "Name"
+        text2 = font1.render(text2, 0, (255, 255, 255))
+        screen.blit(text2, (10, 40))
+        Nick2 = font1.render(match2["Nick"], 0, (255, 255, 255))
+        screen.blit(Nick2, (120, 40))
+        Score2 = str(match2["Score"])
+        Score2 = font1.render(Score2, 0, (255, 255, 255))
+        screen.blit(Score2, (470, 40))
+        text5 = "Turn:"
+        text5 = font1.render(text5, 0, (255, 255, 255))
+        screen.blit(text5, (700, 40))
+        Turn = font1.render(turn, 0, (255, 255, 255))
+        screen.blit(Turn, (780, 40))
+
+        pygame.display.update()  # updates the screen
+
+    music.stop()
+    match1["Time"] = float(seg)
+    match2["Time"] = float(seg)
+    if match1["Score"] > match2["Score"] and match1["Time"] < 240:
+        match1["Status"] = "W"
+        match2["Status"] = "L"
+
+    elif match1["Score"] < match2["Score"] and match2["Time"] < 240:
+        match1["Status"] = "L"
+        match2["Status"] = "W"
+
+    else:
+        match1["Status"] = "L"
+        match2["Status"] = "L"
+    games.append(match1)
+    games.append(match2)
+    games_to_File()
+    load_games_File()
+    players_to_File()
+    load_Players_File()
+    pygame.quit()  # termimates python's proceeses
+    sys.exit()
+
+#---------------------------------------------------------------------------------------------------------------------
+
+def twenty_2P(name1, nick1, name2, nick2):  # metodo principal
+    pygame.init()  # inicialia los procesos de pygame
+    screen = pygame.display.set_mode([900, 700])  # se crea un ventana
+    pygame.display.set_caption("Memory")  # se le otorga un titulo a la ventana
+    exit = False  # variable necesaria para mantener el ciclo donde se realizan las acciones
+    cursor = Cursor()  # crea un cursor
+    clock = pygame.time.Clock()  # crea un reloj
+    back = pygame.image.load("Images/backW.jpg").convert()  # imagen de la interfaz
+    back = pygame.transform.scale(back, (900, 700))
+    posX, posY = 0, 0
+    font1 = pygame.font.SysFont("Castellar", 20, False, False)
+    music = pygame.mixer.Sound("Pokemon.wav")
+
+    backCart = pygame.image.load("Images/backc.jpg").convert()
+    backCart = pygame.transform.scale(backCart, (90, 110))
+    image1 = pygame.image.load("Images/6.jpg").convert()
+    image1 = pygame.transform.scale(image1, (90, 110))
+    image2 = pygame.image.load("Images/7.jpg").convert()
+    image2 = pygame.transform.scale(image2, (90, 110))
+    image3 = pygame.image.load("Images/8.jpg").convert()
+    image3 = pygame.transform.scale(image3, (90, 110))
+    image4 = pygame.image.load("Images/9.jpg").convert()
+    image4 = pygame.transform.scale(image4, (90, 110))
+    image5 = pygame.image.load("Images/10.jpg").convert()
+    image5 = pygame.transform.scale(image5, (90, 110))
+    image6 = pygame.image.load("Images/11.jpg").convert()
+    image6 = pygame.transform.scale(image6, (90, 110))
+    image7 = pygame.image.load("Images/12.jpg").convert()
+    image7 = pygame.transform.scale(image7, (90, 110))
+    image8 = pygame.image.load("Images/13.jpg").convert()
+    image8 = pygame.transform.scale(image8, (90, 110))
+    image9 = pygame.image.load("Images/14.jpg").convert()
+    image9 = pygame.transform.scale(image9, (90, 110))
+    image10 = pygame.image.load("Images/15.jpg").convert()
+    image10 = pygame.transform.scale(image10, (90, 110))
+
+    card1A = Card(image1, backCart)
+    card1B = Card(image1, backCart)
+    card2A = Card(image2, backCart)
+    card2B = Card(image2, backCart)
+    card3A = Card(image3, backCart)
+    card3B = Card(image3, backCart)
+    card4A = Card(image4, backCart)
+    card4B = Card(image4, backCart)
+    card5A = Card(image5, backCart)
+    card5B = Card(image5, backCart)
+    card6A = Card(image6, backCart)
+    card6B = Card(image6, backCart)
+    card7A = Card(image7, backCart)
+    card7B = Card(image7, backCart)
+    card8A = Card(image8, backCart)
+    card8B = Card(image8, backCart)
+    card9A = Card(image9, backCart)
+    card9B = Card(image9, backCart)
+    card10A = Card(image10, backCart)
+    card10B = Card(image10, backCart)
+
+
+
+    cardList = [card1A, card1B, card2A, card2B, card3A, card3B, card4A, card4B, card5A, card5B,
+                card6A, card6B, card7A, card7B, card8A, card8B, card9A, card9B, card10A, card10B]
+
+    i = 0
+    j = 0
+    while len(cardList) != 0:
+        card = random.choice(cardList)
+        if j == 5:
+            j = 0
+        elif matrix20[i][0] != "null" and matrix20[i][1] != "null" and matrix20[i][2] != "null" and matrix20[i][3] != \
+                "null" and matrix20[i][4] != "null":
+            i += 1
+        else:
+            if matrix20[i][j] == "null":
+                matrix20[i][j] = card
+                cardList.remove(card)
+                j += 1
+
+    k = 0
+    l = 0
+    pos1 = 100
+    pos2 = 70
+    while k < 4:
+        while l < 5:
+            matrix20[k][l].set_position(pos1, pos2)
+            l += 1
+            pos1 += 150
+        k += 1
+        l = 0
+        pos1 = 100
+        pos2 += 150
+
+
+    couples = 0
+    lista1 = []
+    match1 = {}
+    match1["Name"] = name1
+    match1["Nick"] = nick1
+    match1["Num"] = 1
+    match1["Score"] = 0
+    match1["Time"] = 0
+    match1["Status"] = ""
+
+    match2 = {}
+    match2["Name"] = name2
+    match2["Nick"] = nick2
+    match2["Num"] = 1
+    match2["Score"] = 0
+    match2["Time"] = 0
+    match2["Status"] = ""
+
+
+    turn  = match1["Name"]
+    music.play()
+    while exit != True:  # this loop is where all the processes are done
+        seg = pygame.time.get_ticks() / 1000
+        if couples == 10:
+            exit = True
+
+        elif seg >= 180:
+            exit = True
+
+        elif len(lista1) == 2:
+            time.sleep(0.31)
+            if lista1[0].imageNorm == lista1[1].imageNorm:
+                couples += 1
+                if turn == match1["Name"]:
+                    match1["Score"] += 10
+                    turn = match2["Name"]
+                    lista1.clear()
+                else:
+                    match2["Score"] += 10
+                    turn = match1["Name"]
+                    lista1.clear()
+            else:
+                lista1[0].update(screen)
+                lista1[1].update(screen)
+                lista1.clear()
+                if turn == match1["Name"]:
+                    turn = match2["Name"]
+                    lista1.clear()
+                else:
+                    turn = match1["Name"]
+                    lista1.clear()
+
+        for event in pygame.event.get():  # recorre la lista de los eventos posibles en pygame
+
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                if cursor.colliderect(card1A.rect):
+                    card1A.update(screen)
+                    lista1.append(card1A)
+
+                elif cursor.colliderect(card1B.rect):
+                    card1B.update(screen)
+                    lista1.append(card1B)
+
+                elif cursor.colliderect(card2A.rect):
+                    card2A.update(screen)
+                    lista1.append(card2A)
+
+                elif cursor.colliderect(card2B.rect):
+                    card2B.update(screen)
+                    lista1.append(card2B)
+
+                elif cursor.colliderect(card3A.rect):
+                    card3A.update(screen)
+                    lista1.append(card3A)
+
+                elif cursor.colliderect(card3B.rect):
+                    card3B.update(screen)
+                    lista1.append(card3B)
+
+                elif cursor.colliderect(card4A.rect):
+                    card4A.update(screen)
+                    lista1.append(card4A)
+
+                elif cursor.colliderect(card4B.rect):
+                    card4B.update(screen)
+                    lista1.append(card4B)
+
+                elif cursor.colliderect(card5A.rect):
+                    card5A.update(screen)
+                    lista1.append(card5A)
+
+                elif cursor.colliderect(card5B.rect):
+                    card5B.update(screen)
+                    lista1.append(card5B)
+
+                if cursor.colliderect(card6A.rect):
+                    card6A.update(screen)
+                    lista1.append(card6A)
+
+                elif cursor.colliderect(card6B.rect):
+                    card6B.update(screen)
+                    lista1.append(card6B)
+
+                elif cursor.colliderect(card7A.rect):
+                    card7A.update(screen)
+                    lista1.append(card7A)
+
+                elif cursor.colliderect(card7B.rect):
+                    card7B.update(screen)
+                    lista1.append(card7B)
+
+                elif cursor.colliderect(card8A.rect):
+                    card8A.update(screen)
+                    lista1.append(card8A)
+
+                elif cursor.colliderect(card8B.rect):
+                    card8B.update(screen)
+                    lista1.append(card8B)
+
+                elif cursor.colliderect(card9A.rect):
+                    card9A.update(screen)
+                    lista1.append(card9A)
+
+                elif cursor.colliderect(card9B.rect):
+                    card9B.update(screen)
+                    lista1.append(card9B)
+
+                elif cursor.colliderect(card10A.rect):
+                    card10A.update(screen)
+                    lista1.append(card10A)
+
+                elif cursor.colliderect(card10B.rect):
+                    card10B.update(screen)
+                    lista1.append(card10B)
+
+            elif event.type == pygame.QUIT:  # needed validation to terminate the process
+                exit = True
+
+        screen.blit(back, (posX, posY))
+        clock.tick(20)  # measures the fps
+        cursor.update()  # updates the cursor on the screen
+        card1A.update1(screen)
+        card1B.update1(screen)
+        card2A.update1(screen)
+        card2B.update1(screen)
+        card3A.update1(screen)
+        card3B.update1(screen)
+        card4A.update1(screen)
+        card4B.update1(screen)
+        card5A.update1(screen)
+        card5B.update1(screen)
+        card6A.update1(screen)
+        card6B.update1(screen)
+        card7A.update1(screen)
+        card7B.update1(screen)
+        card8A.update1(screen)
+        card8B.update1(screen)
+        card9A.update1(screen)
+        card9B.update1(screen)
+        card10A.update1(screen)
+        card10B.update1(screen)
+
+        seg = str(seg)
+        contador = font1.render(seg, 0, (255, 255, 255))
+        screen.blit(contador, (800, 10))
+        text1 = "Name:"
+        text1 = font1.render(text1, 0, (255, 255, 255))
+        screen.blit(text1, (10, 10))
+        Nick1 = font1.render(match1["Nick"], 0, (255, 255, 255))
+        screen.blit(Nick1, (120, 10))
+        text3 = "Score:"
+        text3 = font1.render(text3, 0, (255, 255, 255))
+        screen.blit(text3, (350, 10))
+        screen.blit(text3, (350, 40))
+        Score1 = str(match1["Score"])
+        Score1 = font1.render(Score1, 0, (255, 255, 255))
+        screen.blit(Score1, (470, 10))
+        text4 = "Time:"
+        text4 = font1.render(text4, 0, (255, 255, 255))
+        screen.blit(text4, (700, 10))
+        text2 = "Name"
+        text2 = font1.render(text2, 0, (255, 255, 255))
+        screen.blit(text2, (10, 40))
+        Nick2 = font1.render(match2["Nick"], 0, (255, 255, 255))
+        screen.blit(Nick2, (120, 40))
+        Score2 = str(match2["Score"])
+        Score2 = font1.render(Score2, 0, (255, 255, 255))
+        screen.blit(Score2, (470, 40))
+        text5 = "Turn:"
+        text5 = font1.render(text5, 0, (255, 255, 255))
+        screen.blit(text5, (700, 40))
+        Turn = font1.render(turn, 0, (255, 255, 255))
+        screen.blit(Turn, (780, 40))
+
+        pygame.display.update()  # updates the screen
+
+    music.stop()
+    match1["Time"] = float(seg)
+    match2["Time"] = float(seg)
+    if match1["Score"] > match2["Score"] and match1["Time"] < 180:
+        match1["Status"] = "W"
+        match2["Status"] = "L"
+
+    elif match1["Score"] < match2["Score"] and match2["Time"] < 180:
+        match1["Status"] = "L"
+        match2["Status"] = "W"
+
+    elif match1["Score"] == match2["Score"] and match2["Time"] < 180:
+        match1["Status"] = "T"
+        match2["Status"] = "T"
+
+    else:
+        match1["Status"] = "L"
+        match2["Status"] = "L"
+    games.append(match1)
+    games.append(match2)
+    games_to_File()
+    load_games_File()
+    players_to_File()
+    load_Players_File()
+    pygame.quit()  # termimates python's proceeses
+    sys.exit()
+
+#---------------------------------------------------------------------------------------------------------------------
+
+def ten_2P(name1, nick1, name2, nick2):#metodo principal
+    pygame.init()# inicialia los procesos de pygame
+    screen = pygame.display.set_mode([900,700])# se crea un ventana
+    pygame.display.set_caption("Memory")# se le otorga un titulo a la ventana
+    exit = False# variable necesaria para mantener el ciclo donde se realizan las acciones
+    cursor = Cursor()# crea un cursor
+    clock = pygame.time.Clock()#crea un reloj
+    back = pygame.image.load("Images/backW.jpg").convert()  # imagen de la interfaz
+    back = pygame.transform.scale(back, (900, 700))
+    posX, posY = 0, 0
+    font1 = pygame.font.SysFont("Castellar",20,False,False)
+    music = pygame.mixer.Sound("Pokemon.wav")
+
+    backCart = pygame.image.load("Images/backc.jpg").convert()
+    backCart = pygame.transform.scale(backCart, (110, 150))
+    image1 = pygame.image.load("Images/1.jpg").convert()
+    image1 = pygame.transform.scale(image1, (110, 150))
+    image2 = pygame.image.load("Images/2.jpg").convert()
+    image2 = pygame.transform.scale(image2, (110, 150))
+    image3 = pygame.image.load("Images/3.jpg").convert()
+    image3 = pygame.transform.scale(image3, (110, 150))
+    image4 = pygame.image.load("Images/4.jpg").convert()
+    image4 = pygame.transform.scale(image4, (110, 150))
+    image5 = pygame.image.load("Images/5.jpg").convert()
+    image5 = pygame.transform.scale(image5, (110, 150))
+
+    card1A = Card(image1,backCart)
+    card1B = Card(image1,backCart)
+    card2A = Card(image2,backCart)
+    card2B = Card(image2,backCart)
+    card3A = Card(image3,backCart)
+    card3B = Card(image3,backCart)
+    card4A = Card(image4,backCart)
+    card4B = Card(image4,backCart)
+    card5A = Card(image5,backCart)
+    card5B = Card(image5,backCart)
+
+    cardList = [card1A,card1B,card2A,card2B,card3A,card3B,card4A,card4B,card5A,card5B]
+    i = 0
+    j = 0
+    while len(cardList) != 0:
+        card = random.choice(cardList)
+        if j == 4:
+            j = 0
+        elif matrix10[i][0] != "null" and matrix10[i][1]!="null" and matrix10[i][2]!="null" and matrix10[i][3]!="null":
+            i+= 1
+        else:
+            if matrix10[i][j] == "null":
+                matrix10[i][j] = card
+                cardList.remove(card)
+                j+= 1
+
+
+    k = 0
+    l = 0
+    pos1 = 85
+    pos2 = 100
+    while k < 2:
+        while l < 4:
+            matrix10[k][l].set_position(pos1,pos2)
+            l+=1
+            pos1 += 200
+        k+=1
+        l = 0
+        pos1 = 85
+        pos2+= 200
+    matrix10[2][0].set_position(190,500)
+    matrix10[2][1].set_position(580,500)
+
+    couples = 0
+    lista1 = []
+    match1 = {}
+    match1["Name"] = name1
+    match1["Nick"] = nick1
+    match1["Num"] = 1
+    match1["Score"] = 0
+    match1["Time"] = 0
+    match1["Status"] = ""
+
+    match2 = {}
+    match2["Name"] = name2
+    match2["Nick"] = nick2
+    match2["Num"] = 1
+    match2["Score"] = 0
+    match2["Time"] = 0
+    match2["Status"] = ""
+
+    turn = match1["Name"]
+    music.play()
+    while exit != True:# this loop is where all the processes are done
+        seg = pygame.time.get_ticks() / 1000
+        if couples == 5:
+            exit = True
+
+        elif seg >= 120:
+            exit = True
+
+        elif len(lista1) == 2:
+            time.sleep(0.31)
+            if lista1[0].imageNorm == lista1[1].imageNorm:
+                couples += 1
+                if turn == match1["Name"]:
+                    match1["Score"] += 10
+                    turn = match2["Name"]
+                    lista1.clear()
+                else:
+                    match2["Score"]+=10
+                    turn = match1["Name"]
+                    lista1.clear()
+            else:
+                lista1[0].update(screen)
+                lista1[1].update(screen)
+                if turn == match1["Name"]:
+                    turn = match2["Name"]
+                    lista1.clear()
+                else:
+                    turn = match1["Name"]
+                    lista1.clear()
+
+
+        for event in pygame.event.get():# recorre la lista de los eventos posibles en pygame
+
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                if cursor.colliderect(card1A.rect):
+                    card1A.update(screen)
+                    lista1.append(card1A)
+
+                elif cursor.colliderect(card1B.rect):
+                    card1B.update(screen)
+                    lista1.append(card1B)
+
+                elif cursor.colliderect(card2A.rect):
+                    card2A.update(screen)
+                    lista1.append(card2A)
+
+                elif cursor.colliderect(card2B.rect):
+                    card2B.update(screen)
+                    lista1.append(card2B)
+
+                elif cursor.colliderect(card3A.rect):
+                    card3A.update(screen)
+                    lista1.append(card3A)
+
+                elif cursor.colliderect(card3B.rect):
+                    card3B.update(screen)
+                    lista1.append(card3B)
+
+                elif cursor.colliderect(card4A.rect):
+                    card4A.update(screen)
+                    lista1.append(card4A)
+
+                elif cursor.colliderect(card4B.rect):
+                    card4B.update(screen)
+                    lista1.append(card4B)
+
+                elif cursor.colliderect(card5A.rect):
+                    card5A.update(screen)
+                    lista1.append(card5A)
+
+                elif cursor.colliderect(card5B.rect):
+                    card5B.update(screen)
+                    lista1.append(card5B)
+
+            elif event.type == pygame.QUIT:#needed validation to terminate the process
+                exit = True
+
+        screen.blit(back, (posX, posY))
+        clock.tick(20)#measures the fps
+        cursor.update()# updates the cursor on the screen
+        card1A.update1(screen)
+        card1B.update1(screen)
+        card2A.update1(screen)
+        card2B.update1(screen)
+        card3A.update1(screen)
+        card3B.update1(screen)
+        card4A.update1(screen)
+        card4B.update1(screen)
+        card5A.update1(screen)
+        card5B.update1(screen)
+        seg = str(seg)
+        contador = font1.render(seg ,0, (255, 255, 255))
+        screen.blit(contador,(800, 10))
+        text1 = "Name:"
+        text1 = font1.render(text1, 0,(255, 255, 255))
+        screen.blit(text1,(10,10))
+        Nick1 = font1.render(match1["Nick"], 0,(255, 255, 255))
+        screen.blit(Nick1,(120, 10))
+        text3 = "Score:"
+        text3 = font1.render(text3, 0,(255, 255, 255))
+        screen.blit(text3,(350, 10))
+        screen.blit(text3,(350, 40))
+        Score1 = str(match1["Score"])
+        Score1 = font1.render(Score1,0,(255, 255, 255))
+        screen.blit(Score1,(470, 10))
+        text4 = "Time:"
+        text4 = font1.render(text4,0,(255, 255, 255))
+        screen.blit(text4,(700, 10))
+        text2 = "Player2:"
+        text2 = font1.render(text2,0,(255,255,255))
+        screen.blit(text2,(10,40))
+        Nick2= font1.render(match2["Nick"],0,(255,255,255))
+        screen.blit(Nick2,(120,40))
+        Score2 = str(match2["Score"])
+        Score2 = font1.render(Score2,0,(255,255,255))
+        screen.blit(Score2,(470,40))
+        text5 = "Turn:"
+        text5= font1.render(text5,0,(255,255,255))
+        screen.blit(text5,(700,40))
+        Turn = font1.render(turn,0,(255,255,255))
+        screen.blit(Turn,(780,40))
+
+        pygame.display.update()#updates the screen
+    music.stop()
+    match1["Time"] = float(seg)
+    match2["Time"] = float(seg)
+
+    if match1["Score"] > match2["Score"] and match1["Time"] < 120:
+        match1["Status"] = "W"
+        match2["Status"] = "L"
+    elif match2["Score"] > match1["Score"] and match2["Time"] < 120:
+        match2["Status"] = "W"
+        match1["Status"] = "L"
+    else:
+        match1["Status"] = "L"
+        match2["Status"] = "L"
+    games.append(match1)
+    games.append(match2)
+    games_to_File()
+    load_games_File()
+    players_to_File()
+    load_Players_File()
+    pygame.quit()# termimates python's proceeses
+    sys.exit()
+
+#---------------------------------------------------------------------------------------------------------------------
+
+def thirty_1P(name, nick):  # metodo principal
+    pygame.init()  # inicialia los procesos de pygame
+    screen = pygame.display.set_mode([1000, 700])  # se crea un ventana
+    pygame.display.set_caption("Memory")  # se le otorga un titulo a la ventana
+    exit = False  # variable necesaria para mantener el ciclo donde se realizan las acciones
+    cursor = Cursor()  # crea un cursor
+    clock = pygame.time.Clock()  # crea un reloj
+    back = pygame.image.load("Images/backW.jpg").convert()  # imagen de la interfaz
+    back = pygame.transform.scale(back, (1000, 700))
+    posX, posY = 0, 0
+    font1 = pygame.font.SysFont("Castellar", 20, False, False)
+    music = pygame.mixer.Sound("Pokemon.wav")
+
+    backCart = pygame.image.load("Images/backc.jpg").convert()
+    backCart = pygame.transform.scale(backCart, (70, 90))
+    image1 = pygame.image.load("Images/16.jpg").convert()
+    image1 = pygame.transform.scale(image1, (70, 90))
+    image2 = pygame.image.load("Images/17.jpg").convert()
+    image2 = pygame.transform.scale(image2, (70, 90))
+    image3 = pygame.image.load("Images/18.jpg").convert()
+    image3 = pygame.transform.scale(image3, (70, 90))
+    image4 = pygame.image.load("Images/19.jpg").convert()
+    image4 = pygame.transform.scale(image4, (70, 90))
+    image5 = pygame.image.load("Images/20.jpg").convert()
+    image5 = pygame.transform.scale(image5, (70, 90))
+    image6 = pygame.image.load("Images/21.jpg").convert()
+    image6 = pygame.transform.scale(image6, (70, 90))
+    image7 = pygame.image.load("Images/23.jpg").convert()
+    image7 = pygame.transform.scale(image7, (70, 90))
+    image8 = pygame.image.load("Images/24.jpg").convert()
+    image8 = pygame.transform.scale(image8, (70, 90))
+    image9 = pygame.image.load("Images/25.jpg").convert()
+    image9 = pygame.transform.scale(image9, (70, 90))
+    image10 = pygame.image.load("Images/26.jpg").convert()
+    image10 = pygame.transform.scale(image10, (70, 90))
+    image11 = pygame.image.load("Images/27.jpg").convert()
+    image11 = pygame.transform.scale(image11, (70, 90))
+    image12 = pygame.image.load("Images/28.jpg").convert()
+    image12 = pygame.transform.scale(image12, (70, 90))
+    image13 = pygame.image.load("Images/29.jpg").convert()
+    image13 = pygame.transform.scale(image13, (70, 90))
+    image14 = pygame.image.load("Images/30.jpg").convert()
+    image14 = pygame.transform.scale(image14, (70, 90))
+    image15 = pygame.image.load("Images/31.jpg").convert()
+    image15 = pygame.transform.scale(image15, (70, 90))
+
+    card1A = Card(image1, backCart)
+    card1B = Card(image1, backCart)
+    card2A = Card(image2, backCart)
+    card2B = Card(image2, backCart)
+    card3A = Card(image3, backCart)
+    card3B = Card(image3, backCart)
+    card4A = Card(image4, backCart)
+    card4B = Card(image4, backCart)
+    card5A = Card(image5, backCart)
+    card5B = Card(image5, backCart)
+    card6A = Card(image6, backCart)
+    card6B = Card(image6, backCart)
+    card7A = Card(image7, backCart)
+    card7B = Card(image7, backCart)
+    card8A = Card(image8, backCart)
+    card8B = Card(image8, backCart)
+    card9A = Card(image9, backCart)
+    card9B = Card(image9, backCart)
+    card10A = Card(image10, backCart)
+    card10B = Card(image10, backCart)
+    card11A = Card(image11, backCart)
+    card11B = Card(image11, backCart)
+    card12A = Card(image12, backCart)
+    card12B = Card(image12, backCart)
+    card13A = Card(image13, backCart)
+    card13B = Card(image13, backCart)
+    card14A = Card(image14, backCart)
+    card14B = Card(image14, backCart)
+    card15A = Card(image15, backCart)
+    card15B = Card(image15, backCart)
+
+    cardList = [card1A, card1B, card2A, card2B, card3A, card3B, card4A, card4B, card5A, card5B,
+                card6A, card6B, card7A, card7B, card8A, card8B, card9A, card9B, card10A, card10B,
+                card11A, card11B, card12A, card12B, card13A, card13B, card14A, card14B, card15A, card15B]
+
+    i = 0
+    j = 0
+    while len(cardList) != 0:
+        card = random.choice(cardList)
+        if j == 6:
+            j = 0
+        elif matrix30[i][0] != "null" and matrix30[i][1] != "null" and matrix30[i][2] != "null" and matrix30[i][3] != \
+                "null" and matrix30[i][4] != "null" and matrix30[i][5] != "null":
+            i += 1
+        else:
+            if matrix30[i][j] == "null":
+                matrix30[i][j] = card
+                cardList.remove(card)
+                j+=1
+
+    k = 0
+    l = 0
+    pos1 = 100
+    pos2 = 50
+    while k < 5:
+        while l < 6:
+            matrix30[k][l].set_position(pos1, pos2)
+            l += 1
+            pos1 += 150
+        k += 1
+        l = 0
+        pos1 = 100
+        pos2 += 130
+
+
+    couples = 0
+    lista1 = []
+    match = {}
+    match["Name"] = name
+    match["Nick"] = nick
+    match["Num"] = 1
+    match["Score"] = 0
+    match["Time"] = 0
+    match["Status"] = ""
+
+    music.play()
+    while exit != True:  # this loop is where all the processes are done
+        seg = pygame.time.get_ticks() / 1000
+        if couples == 15:
+            exit = True
+
+        elif seg >= 240:
+            exit = True
+
+        elif len(lista1) == 2:
+            time.sleep(1)
+            if lista1[0].imageNorm == lista1[1].imageNorm:
+                couples += 1
+                match["Score"] += 10
+                lista1.clear()
+            else:
+                lista1[0].update(screen)
+                lista1[1].update(screen)
+                lista1.clear()
+
+        for event in pygame.event.get():  # recorre la lista de los eventos posibles en pygame
+
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                if cursor.colliderect(card1A.rect):
+                    card1A.update(screen)
+                    lista1.append(card1A)
+
+                elif cursor.colliderect(card1B.rect):
+                    card1B.update(screen)
+                    lista1.append(card1B)
+
+                elif cursor.colliderect(card2A.rect):
+                    card2A.update(screen)
+                    lista1.append(card2A)
+
+                elif cursor.colliderect(card2B.rect):
+                    card2B.update(screen)
+                    lista1.append(card2B)
+
+                elif cursor.colliderect(card3A.rect):
+                    card3A.update(screen)
+                    lista1.append(card3A)
+
+                elif cursor.colliderect(card3B.rect):
+                    card3B.update(screen)
+                    lista1.append(card3B)
+
+                elif cursor.colliderect(card4A.rect):
+                    card4A.update(screen)
+                    lista1.append(card4A)
+
+                elif cursor.colliderect(card4B.rect):
+                    card4B.update(screen)
+                    lista1.append(card4B)
+
+                elif cursor.colliderect(card5A.rect):
+                    card5A.update(screen)
+                    lista1.append(card5A)
+
+                elif cursor.colliderect(card5B.rect):
+                    card5B.update(screen)
+                    lista1.append(card5B)
+
+                if cursor.colliderect(card6A.rect):
+                    card6A.update(screen)
+                    lista1.append(card6A)
+
+                elif cursor.colliderect(card6B.rect):
+                    card6B.update(screen)
+                    lista1.append(card6B)
+
+                elif cursor.colliderect(card7A.rect):
+                    card7A.update(screen)
+                    lista1.append(card7A)
+
+                elif cursor.colliderect(card7B.rect):
+                    card7B.update(screen)
+                    lista1.append(card7B)
+
+                elif cursor.colliderect(card8A.rect):
+                    card8A.update(screen)
+                    lista1.append(card8A)
+
+                elif cursor.colliderect(card8B.rect):
+                    card8B.update(screen)
+                    lista1.append(card8B)
+
+                elif cursor.colliderect(card9A.rect):
+                    card9A.update(screen)
+                    lista1.append(card9A)
+
+                elif cursor.colliderect(card9B.rect):
+                    card9B.update(screen)
+                    lista1.append(card9B)
+
+                elif cursor.colliderect(card10A.rect):
+                    card10A.update(screen)
+                    lista1.append(card10A)
+
+                elif cursor.colliderect(card10B.rect):
+                    card10B.update(screen)
+                    lista1.append(card10B)
+
+                if cursor.colliderect(card11A.rect):
+                    card11A.update(screen)
+                    lista1.append(card11A)
+
+                elif cursor.colliderect(card11B.rect):
+                    card11B.update(screen)
+                    lista1.append(card11B)
+
+                elif cursor.colliderect(card12A.rect):
+                    card12A.update(screen)
+                    lista1.append(card12A)
+
+                elif cursor.colliderect(card12B.rect):
+                    card12B.update(screen)
+                    lista1.append(card12B)
+
+                elif cursor.colliderect(card13A.rect):
+                    card13A.update(screen)
+                    lista1.append(card13A)
+
+                elif cursor.colliderect(card13B.rect):
+                    card13B.update(screen)
+                    lista1.append(card13B)
+
+                elif cursor.colliderect(card14A.rect):
+                    card14A.update(screen)
+                    lista1.append(card14A)
+
+                elif cursor.colliderect(card14B.rect):
+                    card14B.update(screen)
+                    lista1.append(card14B)
+
+                elif cursor.colliderect(card15A.rect):
+                    card15A.update(screen)
+                    lista1.append(card15A)
+
+                elif cursor.colliderect(card15B.rect):
+                    card15B.update(screen)
+                    lista1.append(card15B)
+
+            elif event.type == pygame.QUIT:  # needed validation to terminate the process
+                exit = True
+
+        screen.blit(back, (posX, posY))
+        clock.tick(20)  # measures the fps
+        cursor.update()  # updates the cursor on the screen
+        card1A.update1(screen)
+        card1B.update1(screen)
+        card2A.update1(screen)
+        card2B.update1(screen)
+        card3A.update1(screen)
+        card3B.update1(screen)
+        card4A.update1(screen)
+        card4B.update1(screen)
+        card5A.update1(screen)
+        card5B.update1(screen)
+        card6A.update1(screen)
+        card6B.update1(screen)
+        card7A.update1(screen)
+        card7B.update1(screen)
+        card8A.update1(screen)
+        card8B.update1(screen)
+        card9A.update1(screen)
+        card9B.update1(screen)
+        card10A.update1(screen)
+        card10B.update1(screen)
+        card11A.update1(screen)
+        card11B.update1(screen)
+        card12A.update1(screen)
+        card12B.update1(screen)
+        card13A.update1(screen)
+        card13B.update1(screen)
+        card14A.update1(screen)
+        card14B.update1(screen)
+        card15A.update1(screen)
+        card15B.update1(screen)
+
+        seg = str(seg)
+        contador = font1.render(seg, 0, (255, 255, 255))
+        screen.blit(contador, (810, 10))
+        text1 = "Name:"
+        text1 = font1.render(text1, 0, (255, 255, 255))
+        screen.blit(text1, (10, 10))
+        Name = font1.render(match["Name"], 0, (255, 255, 255))
+        screen.blit(Name, (90, 10))
+        text2 = "Nick:"
+        text2 = font1.render(text2, 0, (255, 255, 255))
+        screen.blit(text2, (200, 10))
+        Nick = font1.render(match["Nick"], 0, (255, 255, 255))
+        screen.blit(Nick, (290, 10))
+        text3 = "Score:"
+        text3 = font1.render(text3, 0, (255, 255, 255))
+        screen.blit(text3, (580, 10))
+        Score = str(match["Score"])
+        Score = font1.render(Score, 0, (255, 255, 255))
+        screen.blit(Score, (670, 10))
+        text4 = "Time:"
+        text4 = font1.render(text4, 0, (255, 255, 255))
+        screen.blit(text4, (720, 10))
+
+        pygame.display.update()  # updates the screen
+    music.stop()
+    match["Time"] = float(seg)
+    if match["Time"] < 240:
+        match["Status"] = "W"
+    else:
+        match["Status"] = "L"
+    games.append(match)
+    games_to_File()
+    load_games_File()
+    players_to_File()
+    load_Players_File()
+    pygame.quit()  # termimates python's proceeses
+    sys.exit()
+
+#---------------------------------------------------------------------------------------------------------------------
+
+def twenty_1P(name, nick):  # metodo principal
+    pygame.init()  # inicialia los procesos de pygame
+    screen = pygame.display.set_mode([900, 700])  # se crea un ventana
+    pygame.display.set_caption("Memory")  # se le otorga un titulo a la ventana
+    exit = False  # variable necesaria para mantener el ciclo donde se realizan las acciones
+    cursor = Cursor()  # crea un cursor
+    clock = pygame.time.Clock()  # crea un reloj
+    back = pygame.image.load("Images/backW.jpg").convert()  # imagen de la interfaz
+    back = pygame.transform.scale(back, (900, 700))
+    posX, posY = 0, 0
+    font1 = pygame.font.SysFont("Castellar", 20, False, False)
+    music = pygame.mixer.Sound("Pokemon.wav")
+
+    backCart = pygame.image.load("Images/backc.jpg").convert()
+    backCart = pygame.transform.scale(backCart, (90, 110))
+    image1 = pygame.image.load("Images/6.jpg").convert()
+    image1 = pygame.transform.scale(image1, (90, 110))
+    image2 = pygame.image.load("Images/7.jpg").convert()
+    image2 = pygame.transform.scale(image2, (90, 110))
+    image3 = pygame.image.load("Images/8.jpg").convert()
+    image3 = pygame.transform.scale(image3, (90, 110))
+    image4 = pygame.image.load("Images/9.jpg").convert()
+    image4 = pygame.transform.scale(image4, (90, 110))
+    image5 = pygame.image.load("Images/10.jpg").convert()
+    image5 = pygame.transform.scale(image5, (90, 110))
+    image6 = pygame.image.load("Images/11.jpg").convert()
+    image6 = pygame.transform.scale(image6, (90, 110))
+    image7 = pygame.image.load("Images/12.jpg").convert()
+    image7 = pygame.transform.scale(image7, (90, 110))
+    image8 = pygame.image.load("Images/13.jpg").convert()
+    image8 = pygame.transform.scale(image8, (90, 110))
+    image9 = pygame.image.load("Images/14.jpg").convert()
+    image9 = pygame.transform.scale(image9, (90, 110))
+    image10 = pygame.image.load("Images/15.jpg").convert()
+    image10 = pygame.transform.scale(image10, (90, 110))
+
+    card1A = Card(image1, backCart)
+    card1B = Card(image1, backCart)
+    card2A = Card(image2, backCart)
+    card2B = Card(image2, backCart)
+    card3A = Card(image3, backCart)
+    card3B = Card(image3, backCart)
+    card4A = Card(image4, backCart)
+    card4B = Card(image4, backCart)
+    card5A = Card(image5, backCart)
+    card5B = Card(image5, backCart)
+    card6A = Card(image6, backCart)
+    card6B = Card(image6, backCart)
+    card7A = Card(image7, backCart)
+    card7B = Card(image7, backCart)
+    card8A = Card(image8, backCart)
+    card8B = Card(image8, backCart)
+    card9A = Card(image9, backCart)
+    card9B = Card(image9, backCart)
+    card10A = Card(image10, backCart)
+    card10B = Card(image10, backCart)
+
+    cardList = [card1A, card1B, card2A, card2B, card3A, card3B, card4A, card4B, card5A, card5B,
+                card6A, card6B, card7A, card7B, card8A, card8B, card9A, card9B, card10A, card10B]
+
+    i = 0
+    j = 0
+    while len(cardList) != 0:
+        card = random.choice(cardList)
+        if j == 5:
+            j = 0
+        elif matrix20[i][0] != "null" and matrix20[i][1] != "null" and matrix20[i][2] != "null" and matrix20[i][3] != \
+                "null" and matrix20[i][4] != "null":
+            i += 1
+        else:
+            if matrix20[i][j] == "null":
+                matrix20[i][j] = card
+                cardList.remove(card)
+                j += 1
+
+    k = 0
+    l = 0
+    pos1 = 100
+    pos2 = 50
+    while k < 4:
+        while l < 5:
+            matrix20[k][l].set_position(pos1, pos2)
+            l += 1
+            pos1 += 150
+        k += 1
+        l = 0
+        pos1 = 100
+        pos2 += 150
+
+
+    couples = 0
+    lista1 = []
+    match = {}
+    match["Name"] = name
+    match["Nick"] = nick
+    match["Num"] = 1
+    match["Score"] = 0
+    match["Time"] = 0
+    match["Status"] = ""
+
+    music.play()
+    while exit != True:  # this loop is where all the processes are done
+        seg = pygame.time.get_ticks() / 1000
+        if couples == 10:
+            exit = True
+
+        elif seg >= 180:
+            exit = True
+
+        elif len(lista1) == 2:
+            time.sleep(0.31)
+            if lista1[0].imageNorm == lista1[1].imageNorm:
+                couples += 1
+                match["Score"] += 10
+                lista1.clear()
+            else:
+                lista1[0].update(screen)
+                lista1[1].update(screen)
+                lista1.clear()
+
+        for event in pygame.event.get():  # recorre la lista de los eventos posibles en pygame
+
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                if cursor.colliderect(card1A.rect):
+                    card1A.update(screen)
+                    lista1.append(card1A)
+
+                elif cursor.colliderect(card1B.rect):
+                    card1B.update(screen)
+                    lista1.append(card1B)
+
+                elif cursor.colliderect(card2A.rect):
+                    card2A.update(screen)
+                    lista1.append(card2A)
+
+                elif cursor.colliderect(card2B.rect):
+                    card2B.update(screen)
+                    lista1.append(card2B)
+
+                elif cursor.colliderect(card3A.rect):
+                    card3A.update(screen)
+                    lista1.append(card3A)
+
+                elif cursor.colliderect(card3B.rect):
+                    card3B.update(screen)
+                    lista1.append(card3B)
+
+                elif cursor.colliderect(card4A.rect):
+                    card4A.update(screen)
+                    lista1.append(card4A)
+
+                elif cursor.colliderect(card4B.rect):
+                    card4B.update(screen)
+                    lista1.append(card4B)
+
+                elif cursor.colliderect(card5A.rect):
+                    card5A.update(screen)
+                    lista1.append(card5A)
+
+                elif cursor.colliderect(card5B.rect):
+                    card5B.update(screen)
+                    lista1.append(card5B)
+
+                if cursor.colliderect(card6A.rect):
+                    card6A.update(screen)
+                    lista1.append(card6A)
+
+                elif cursor.colliderect(card6B.rect):
+                    card6B.update(screen)
+                    lista1.append(card6B)
+
+                elif cursor.colliderect(card7A.rect):
+                    card7A.update(screen)
+                    lista1.append(card7A)
+
+                elif cursor.colliderect(card7B.rect):
+                    card7B.update(screen)
+                    lista1.append(card7B)
+
+                elif cursor.colliderect(card8A.rect):
+                    card8A.update(screen)
+                    lista1.append(card8A)
+
+                elif cursor.colliderect(card8B.rect):
+                    card8B.update(screen)
+                    lista1.append(card8B)
+
+                elif cursor.colliderect(card9A.rect):
+                    card9A.update(screen)
+                    lista1.append(card9A)
+
+                elif cursor.colliderect(card9B.rect):
+                    card9B.update(screen)
+                    lista1.append(card9B)
+
+                elif cursor.colliderect(card10A.rect):
+                    card10A.update(screen)
+                    lista1.append(card10A)
+
+                elif cursor.colliderect(card10B.rect):
+                    card10B.update(screen)
+                    lista1.append(card10B)
+
+            elif event.type == pygame.QUIT:  # needed validation to terminate the process
+                exit = True
+
+        screen.blit(back, (posX, posY))
+        clock.tick(20)  # measures the fps
+        cursor.update()  # updates the cursor on the screen
+        card1A.update1(screen)
+        card1B.update1(screen)
+        card2A.update1(screen)
+        card2B.update1(screen)
+        card3A.update1(screen)
+        card3B.update1(screen)
+        card4A.update1(screen)
+        card4B.update1(screen)
+        card5A.update1(screen)
+        card5B.update1(screen)
+        card6A.update1(screen)
+        card6B.update1(screen)
+        card7A.update1(screen)
+        card7B.update1(screen)
+        card8A.update1(screen)
+        card8B.update1(screen)
+        card9A.update1(screen)
+        card9B.update1(screen)
+        card10A.update1(screen)
+        card10B.update1(screen)
+
+        seg = str(seg)
+        contador = font1.render(seg, 0, (255, 255, 255))
+        screen.blit(contador, (810, 10))
+        text1 = "Name:"
+        text1 = font1.render(text1, 0, (255, 255, 255))
+        screen.blit(text1, (10, 10))
+        Name = font1.render(match["Name"], 0, (255, 255, 255))
+        screen.blit(Name, (90, 10))
+        text2 = "Nick:"
+        text2 = font1.render(text2, 0, (255, 255, 255))
+        screen.blit(text2, (200, 10))
+        Nick = font1.render(match["Nick"], 0, (255, 255, 255))
+        screen.blit(Nick, (290, 10))
+        text3 = "Score:"
+        text3 = font1.render(text3, 0, (255, 255, 255))
+        screen.blit(text3, (580, 10))
+        Score = str(match["Score"])
+        Score = font1.render(Score, 0, (255, 255, 255))
+        screen.blit(Score, (670, 10))
+        text4 = "Time:"
+        text4 = font1.render(text4, 0, (255, 255, 255))
+        screen.blit(text4, (720, 10))
+
+        pygame.display.update()  # updates the screen
+    music.stop()
+    match["Time"] = float(seg)
+    if match["Time"] < 180:
+        match["Status"] = "W"
+    else:
+        match["Status"] = "L"
+    games.append(match)
+    games_to_File()
+    load_games_File()
+    players_to_File()
+    load_Players_File()
+    pygame.quit()  # termimates python's proceeses
+    sys.exit()
+
+#---------------------------------------------------------------------------------------------------------------------
+
+def ten_1P(name, nick):#metodo principal
+    pygame.init()# inicialia los procesos de pygame
+    screen = pygame.display.set_mode([900,700])# se crea un ventana
+    pygame.display.set_caption("Memory")# se le otorga un titulo a la ventana
+    exit = False# variable necesaria para mantener el ciclo donde se realizan las acciones
+    cursor = Cursor()# crea un cursor
+    clock = pygame.time.Clock()#crea un reloj
+    back = pygame.image.load("Images/backW.jpg").convert()  # imagen de la interfaz
+    back = pygame.transform.scale(back, (900, 700))
+    posX, posY = 0, 0
+    font1 = pygame.font.SysFont("Castellar",20,False,False)
+    music = pygame.mixer.Sound("Pokemon.wav")
+
+    backCart = pygame.image.load("Images/backc.jpg").convert()
+    backCart = pygame.transform.scale(backCart, (110, 150))
+    image1 = pygame.image.load("Images/1.jpg").convert()
+    image1 = pygame.transform.scale(image1, (110, 150))
+    image2 = pygame.image.load("Images/2.jpg").convert()
+    image2 = pygame.transform.scale(image2, (110, 150))
+    image3 = pygame.image.load("Images/3.jpg").convert()
+    image3 = pygame.transform.scale(image3, (110, 150))
+    image4 = pygame.image.load("Images/4.jpg").convert()
+    image4 = pygame.transform.scale(image4, (110, 150))
+    image5 = pygame.image.load("Images/5.jpg").convert()
+    image5 = pygame.transform.scale(image5, (110, 150))
+
+    card1A = Card(image1,backCart)
+    card1B = Card(image1,backCart)
+    card2A = Card(image2,backCart)
+    card2B = Card(image2,backCart)
+    card3A = Card(image3,backCart)
+    card3B = Card(image3,backCart)
+    card4A = Card(image4,backCart)
+    card4B = Card(image4,backCart)
+    card5A = Card(image5,backCart)
+    card5B = Card(image5,backCart)
+
+    cardList = [card1A,card1B,card2A,card2B,card3A,card3B,card4A,card4B,card5A,card5B]
+    i = 0
+    j = 0
+    while len(cardList) != 0:
+        card = random.choice(cardList)
+        if j == 4:
+            j = 0
+        elif matrix10[i][0] != "null" and matrix10[i][1]!="null" and matrix10[i][2]!="null" and matrix10[i][3]!="null":
+            i+= 1
+        else:
+            if matrix10[i][j] == "null":
+                matrix10[i][j] = card
+                cardList.remove(card)
+                j+= 1
+
+
+    k = 0
+    l = 0
+    pos1 = 85
+    pos2 = 100
+    while k < 2:
+        while l < 4:
+            matrix10[k][l].set_position(pos1,pos2)
+            l+=1
+            pos1 += 200
+        k+=1
+        l = 0
+        pos1 = 85
+        pos2+= 200
+    matrix10[2][0].set_position(190,500)
+    matrix10[2][1].set_position(580,500)
+
+    couples = 0
+    lista1 = []
+    match = {}
+    match["Name"] = name
+    match["Nick"] = nick
+    match["Num"] = 1
+    match["Score"] = 0
+    match["Time"] = 0
+    match["Status"] = ""
+
+    music.play()
+    while exit != True:# this loop is where all the processes are done
+        seg = pygame.time.get_ticks() / 1000
+        if couples == 5:
+            exit = True
+
+        elif seg >= 120:
+            exit = True
+
+        elif len(lista1)==2:
+            time.sleep(1)
+            if lista1[0].imageNorm == lista1[1].imageNorm:
+                couples+=1
+                match["Score"]+= 10
+                lista1.clear()
+            else:
+                lista1[0].update(screen)
+                lista1[1].update(screen)
+                lista1.clear()
+
+        for event in pygame.event.get():# recorre la lista de los eventos posibles en pygame
+
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                if cursor.colliderect(card1A.rect):
+                    card1A.update(screen)
+                    lista1.append(card1A)
+
+                elif cursor.colliderect(card1B.rect):
+                    card1B.update(screen)
+                    lista1.append(card1B)
+
+                elif cursor.colliderect(card2A.rect):
+                    card2A.update(screen)
+                    lista1.append(card2A)
+
+                elif cursor.colliderect(card2B.rect):
+                    card2B.update(screen)
+                    lista1.append(card2B)
+
+                elif cursor.colliderect(card3A.rect):
+                    card3A.update(screen)
+                    lista1.append(card3A)
+
+                elif cursor.colliderect(card3B.rect):
+                    card3B.update(screen)
+                    lista1.append(card3B)
+
+                elif cursor.colliderect(card4A.rect):
+                    card4A.update(screen)
+                    lista1.append(card4A)
+
+                elif cursor.colliderect(card4B.rect):
+                    card4B.update(screen)
+                    lista1.append(card4B)
+
+                elif cursor.colliderect(card5A.rect):
+                    card5A.update(screen)
+                    lista1.append(card5A)
+
+                elif cursor.colliderect(card5B.rect):
+                    card5B.update(screen)
+                    lista1.append(card5B)
+
+            elif event.type == pygame.QUIT:#needed validation to terminate the process
+                exit = True
+
+        screen.blit(back, (posX, posY))
+        clock.tick(20)#measures the fps
+        cursor.update()# updates the cursor on the screen
+        card1A.update1(screen)
+        card1B.update1(screen)
+        card2A.update1(screen)
+        card2B.update1(screen)
+        card3A.update1(screen)
+        card3B.update1(screen)
+        card4A.update1(screen)
+        card4B.update1(screen)
+        card5A.update1(screen)
+        card5B.update1(screen)
+        seg = str(seg)
+        contador = font1.render(seg,0,(255,255,255))
+        screen.blit(contador,(810,10))
+        text1 = "Name:"
+        text1 = font1.render(text1,0,(255,255,255))
+        screen.blit(text1,(10,10))
+        Name = font1.render(match["Name"],0,(255,255,255))
+        screen.blit(Name,(90,10))
+        text2 = "Nick:"
+        text2 = font1.render(text2,0,(255,255,255))
+        screen.blit(text2,(200,10))
+        Nick = font1.render(match["Nick"],0,(255,255,255))
+        screen.blit(Nick,(290,10))
+        text3 = "Score:"
+        text3 = font1.render(text3,0,(255,255,255))
+        screen.blit(text3,(580,10))
+        Score = str(match["Score"])
+        Score = font1.render(Score,0,(255,255,255))
+        screen.blit(Score,(670,10))
+        text4 = "Time:"
+        text4 = font1.render(text4,0,(255,255,255))
+        screen.blit(text4,(720,10))
+
+        pygame.display.update()#updates the screen
+    music.stop()
+    match["Time"] = float(seg)
+    if match["Time"] < 120:
+        match["Status"] = "W"
+    else:
+        match["Status"] = "L"
+    games.append(match)
+    games_to_File()
+    load_games_File()
+    players_to_File()
+    load_Players_File()
+    pygame.quit()# termimates python's proceeses
+    sys.exit()
+
+#---------------------------------------------------------------------------------------------------------------------
+
+def playerCardsCategory(name,nick):#this is the method that runs the "one-player" category
+    pygame.init()#initializes pygame
+    screen = pygame.display.set_mode([700, 500])#creates the game's window
+    pygame.display.set_caption("Memory")#gives the window a title
+    exit = False                #this variable is needed to terminate the main loop
+    cursor = Cursor()#creates the "Cursor" object
+    clock = pygame.time.Clock()#creates the clock
+    image1 = pygame.image.load("Images/10C.png")#loads the image
+    image2 = pygame.image.load("Images/10CS.png")#loads the image
+    image3 = pygame.image.load("Images/20C.png")#loads the image
+    image4 = pygame.image.load("Images/20CS.png")  # loads an image
+    image5 = pygame.image.load("Images/30C.png")  # loads an image
+    image6 = pygame.image.load("Images/30CS.png")  # loads an image
+    ten = ButtonPy(image1, image2, 200, 80)#creates a button
+    twenty = ButtonPy(image3, image4, 200, 190)#creates a button
+    thirty = ButtonPy(image5, image6, 200, 310)#creates a button
+    background = pygame.image.load("Images/interface.jpeg").convert()  # imagen de la interfaz
+    background = pygame.transform.scale(background, (700, 500))
+    posX, posY = 0, 0
+    screen.blit(background, (posX, posY))
+
+    while exit != True:#this loop is where all the processes are done
+        for event in pygame.event.get():#runs the possible events in pygame
+
+            if event.type == pygame.MOUSEBUTTONDOWN:#checks when a button is pressed
+                if cursor.colliderect(ten.rect):
+                    ten_1P(name,nick)
+                elif cursor.colliderect(twenty.rect):
+                    twenty_1P(name,nick)
+                elif cursor.colliderect(thirty.rect):
+                    thirty_1P(name,nick)
+
+            if event.type == pygame.QUIT:#needed validation to terminate the game
+                exit = True
+
+        clock.tick(20)#measures the fps
+        cursor.update()#uploads the cursor on the screen
+        ten.update(screen, cursor)#uploads the button on the screen
+        twenty.update(screen, cursor)#uploads the button on the screen
+        thirty.update(screen, cursor)#uploads the button on the screen
+        pygame.display.update()#uploads the screen
+
+    pygame.quit()#closes the pygame's processes
+    sys.exit()
+
+#---------------------------------------------------------------------------------------------------------------------
+
+def playersCardsCategory(name1,nick1,name2,nick2):#method to choose the carts category
+    window = Tk()
+    pygame.init()#initializes pygame
+    screen = pygame.display.set_mode([700, 500])#creates a window
+    pygame.display.set_caption("Memory")#gives the window a title
+    exit = False            #this variable is needed to keep the main processes' loop
+    cursor = Cursor()#crates a cursor
+    clock = pygame.time.Clock()#crates a clock
+    image1 = pygame.image.load("Images/10C.png")#loads an image
+    image2 = pygame.image.load("Images/10CS.png")#loads an image
+    image3 = pygame.image.load("Images/20C.png")#loads an image
+    image4 = pygame.image.load("Images/20CS.png")  # loads an image
+    image5 = pygame.image.load("Images/30C.png")  # loads an image
+    image6 = pygame.image.load("Images/30CS.png")  # loads an image
+    ten = ButtonPy(image1, image2, 200, 80)#creates a button
+    twenty = ButtonPy(image3, image4, 200, 190)#creates a button
+    thirty = ButtonPy(image5, image6, 200, 310)#creates a button
+    background = pygame.image.load("Images/interface.jpeg").convert()  # imagen de la interfaz
+    background = pygame.transform.scale(background, (700, 500))
+    posX, posY = 0, 0
+    screen.blit(background, (posX, posY))
+
+    while exit != True:#this loop is where all the processes are done
+        for event in pygame.event.get():#runs the possible events in pygame
+
+            if event.type == pygame.MOUSEBUTTONDOWN:#checks when a button is pressed
+                if cursor.colliderect(ten.rect):
+                    ten_2P(name1,nick1,name2,nick2)
+                elif cursor.colliderect(twenty.rect):
+                    twenty_2P(name1,nick1,name2,nick2)
+                elif cursor.colliderect(thirty.rect):
+                    thirty_2P(name1,nick1,name2,nick2)
+
+            if event.type == pygame.QUIT:#needed validation to terminate the game
+                exit = True
+
+        clock.tick(20)#measures the fps
+        cursor.update()#updates the cursor on the screen
+        ten.update(screen, cursor)#updates a button on the screen
+        twenty.update(screen, cursor)#updates a button on the screen
+        thirty.update(screen, cursor)#updates a button on the screen
+        pygame.display.update()#updates the screem
+    pygame.quit()#terminates the pygame's processes
+    sys.exit()
+
+#---------------------------------------------------------------------------------------------------------------------
+
+def registerPlayer(name,nick):#sign in and login methods
+    window1.withdraw()
+    if players == []:#adds the player directly if the list is empty
+        player1 = Player()
+        player1.set_Info(name,nick,1)
+        players.append(player1)
+        playerCardsCategory(name, nick)
+#makes the comprobation if the list contains elements
+    for p in players:
+        na,ni = p.get_Info()
+        if na == name and ni == nick:
+            playerCardsCategory(name, nick)
+
+    player2 =Player()
+    player2.set_Info(name,nick,1)
+    players.append(player2)
+    playerCardsCategory(name,nick)
+
+#---------------------------------------------------------------------------------------------------------------------
+
+def playerNick_Name():#this method gets the player's nick and name
+    global window1
+    window1 = Tk()  # creates the fucking window
+    window1.geometry("600x200+100+100")#assigns the dimentions to the window
+    window1.title("Memory")#gives the window a title
+    title = Label(text="Memory Game\nEnter your name and nickname.",font =("Century Gothic",16)).pack()#crates a label and places it on the window
+    naPlayer1 = Label(text="Name:",font = ("Century Gothic",12)).place(x=50, y=70)#crates a label and places it on the window
+    niPlayer1 = Label(text="Nick:",font=("Century Gothic", 12)).place(x=50,y=120)  #crates a label and places it on the window
+    textVariable1 = StringVar()# creates a string-type object
+    textVariable2 = StringVar()# creates a string-type object
+    namePlayer1 = Entry(window1, textvariable=textVariable1, font=("Century Gothic", 12)).place(x= 150, y=73)#creates text-box and places it on the window
+    nickPlayer1 = Entry(window1, textvariable=textVariable2, font=("Century Gothic", 12)).place(x=150, y=120)#creates text-box and places it on the window
+    buttonStart = Button(window1, text="Ok", command = lambda : registerPlayer(textVariable1.get(), textVariable2.get()), font = ("Century Gothic", 16), width = 10).place(x=370, y=80)#creates text-box and places it on the window
+    window1.mainloop()#processes' initializer
+
+#---------------------------------------------------------------------------------------------------------------------
+
+def registerPlayers(name1,nick1,name2,nick2):#sign in and log in method for the two-player category
+    window.withdraw()
+    if players == []:#adds the player directly if the list is empty
+        player1= Player()
+        player1.set_Info(name1,nick1,1)
+        player2 = Player()
+        player2.set_Info(name2,nick2,1)
+        players.append(player1)
+        players.append(player2)
+        playersCardsCategory(name1,nick1,name2,nick2)
+#makes the comprobation if the list contains elements
+    for p1 in players:
+        na1,ni1 = p1.get_Info()
+        if na1 == name1 and ni1 == nick1:
+            for p2 in players:
+                na2,ni2 = p2.get_Info()
+                if na2 == name2 and ni2 == nick2:
+                    playersCardsCategory(name1,nick1,name2,nick2)
+            player3 = Player()
+            player3.set_Info(name2,nick2,1)
+            players.append(player3)
+            playersCardsCategory(name1,nick1,name2,nick2)
+
+    for p3 in players:
+        na3,ni3 = p3.get_Info()
+        if na3 == name2 and ni3 == nick2:
+            player4 = Player()
+            player4.set_Info(name1,nick1,1)
+            players.append(player4)
+            playersCardsCategory(name1, nick1, name2, nick2)
+
+    player5 = Player()
+    player5.set_Info(name1,nick1,1)
+    players.append(player5)
+    player6 = Player()
+    player6.set_Info(name2,nick2,1)
+    players.append(player6)
+    playersCardsCategory(name1, nick1, name2, nick2)
+
+#---------------------------------------------------------------------------------------------------------------------
+
+def playersNick_Names():            # this method obtains the player's name and nick
+    global window
+    window = Tk()           #creates the window
+    window.geometry("600x300+100+100")#asigns the size and dimentions of the window
+    window.title("Memory")#gives the window a title
+    title = Label(text="Memory Game\nEnter the name or nickname of the players.",font =("Century Gothic",16)).pack()  #creates a label and places the window
+    naPlayer1 = Label(text="Name Player 1:",font = ("Century Gothic",12)).place(x=50, y=70)#creates a label and places the window
+    niPlayer1 = Label(text="Nick Player 1:",font=("Century Gothic", 12)).place(x=50,y=120)  # creates a label and places the window
+    naPlayer2 = Label(text="Name Player 2:",font = ("Century Gothic",12)).place(x=50, y=170)#creates a label and places the window
+    niPlayer2 = Label(text="Nick Player 2:",font=("Century Gothic", 12)).place(x=50,y=220)  # creates a label and places the window
+    textVariable1 = StringVar()# creates an string-type object
+    textVariable2 = StringVar()# creates an string-type object
+    textVariable3 = StringVar()# creates an string-type object
+    textVariable4 = StringVar()# creates an string-type object
+    namePlayer1 = Entry(window,textvariable=textVariable1,font=("Century Gothic",12)).place(x= 200,y=73)#creates a text-box and places it in the window
+    nickPlayer1 = Entry(window, textvariable=textVariable2, font=("Century Gothic", 12)).place(x=200,y=120)#creates a text-box and places it in the window
+    namePlayer2 = Entry(window, textvariable=textVariable3, font=("Century Gothic", 12)).place(x=200,y=173)  # creates a text-box and places it in the window
+    nickPlayer2 = Entry(window, textvariable=textVariable4, font=("Century Gothic", 12)).place(x=200,y=223)  # creates a text-box and places it in the window
+    buttonStart = Button(window, text="Ok",command =lambda :registerPlayers(textVariable1.get(),textVariable2.get(),
+    textVariable3.get(),textVariable4.get()), font = ("Century Gothic", 16),width = 10).place(x=430, y=120)#creates a button and places it
+    window.mainloop()#initializes the processes
+
+#---------------------------------------------------------------------------------------------------------------------
+
+def categoryPlayers():#this method selects the number of players
+    pygame.init() #initializes pygame
+    screen = pygame.display.set_mode([700,500])# creates the window
+    pygame.display.set_caption("Memory")            # gives the window a title
+    exit = False #this variable is needed to keep the main processes' loop
+    cursor = Cursor() #creates a cursor
+    clock = pygame.time.Clock()# creates a clock
+    image1 = pygame.image.load("Images/OP.png")# loads an image
+    image2 = pygame.image.load("Images/OPS.png")# loads an image
+    image3 = pygame.image.load("Images/TP.png")  # loads an image
+    image4 = pygame.image.load("Images/TPS.png")  # loads an image
+    player = ButtonPy(image1, image2, 210, 150) # creates a button
+    players= ButtonPy(image3, image4, 200, 270) # creates a button
+    back1 = pygame.image.load("Images/Back.png")  # imports an inmage
+    back2 = pygame.image.load("Images/BackS.png")  # imports an inmage
+    buttonBack = ButtonPy(back1, back2, 500, 400)  # creates a button
+    background = pygame.image.load("Images/interface.jpeg").convert()  # imagen de la interfaz
+    background = pygame.transform.scale(background, (700, 500))
+    posX, posY = 0, 0
+    screen.blit(background, (posX, posY))
+
+    while exit != True:         #this loop is where all the processes are done
+        for event in pygame.event.get():# runs all the possible events in python
+
+            if event.type == pygame.MOUSEBUTTONDOWN:# checks when a button is pressed
+                if cursor.colliderect(player.rect):
+                    pygame.quit()
+                    playerNick_Name()
+                elif cursor.colliderect(players.rect):
+                    pygame.quit()
+                    playersNick_Names()
+                elif cursor.colliderect(buttonBack.rect):
+                    main()
+
+            if event.type == pygame.QUIT:# needed validation to terminate the game
+                exit = True
+
+        clock.tick(20)# measures the fps
+        cursor.update()#updates the cursor on the screen
+        player.update(screen, cursor)# updates the button on the screen
+        players.update(screen, cursor)# updates the button on the screen
+        buttonBack.update(screen, cursor)  # updates the button on the screen
+        pygame.display.update() # updates the button
+
+    pygame.quit()# terminates pyhton's processes
+    sys.exit()
+
+#---------------------------------------------------------------------------------------------------------------------
+
+def list_Score():   #this method sorts the matches discendingly
+    games_Score.clear()
+    list1 = games[:]    #copie the matches list
+    best = 0    #refers to the variable where the minor score will be temporaly
+
+    game = {}   #refers to the variable where the minor match will be temporaly
+    i = 0#itertive counter
+    while i < len(games):   #starts the loop as many times as elements has the list
+        for x in list1:
+            if x["Score"] > best:#compares until it finds the greatest score
+                best = x["Score"]#replaces the variable
+                game = x            #replaces the variable
+        games_Score.append(game)    #añade la mejor partida a lista que contiene las partidas con el puntaje ordenado
+        if game in list1:   #adds the best match to the sorted matches list
+            list1.remove(game)#deletes the match from the list
+            best = 0#restarts the variable
+            game= {}#restarts the variable
+        i+=1#increases the counter
+
+#---------------------------------------------------------------------------------------------------------------------
+
+def list_Time():        #this method organizes the matches according to their time
+    games_Time.clear()
+    list1 = games[:]       #copies the "games" list, so it doesn't manipulates it.
+    best = 1000         #variable to compare the taken time. It was used 1000 (seconds) since no player will last that much
+    game = {}           #creates  the dictionary where the the match its saved
+    i = 0
+    while i < len(games):       #do while 'i' is less than the number of items the list has
+        for x in list1:
+            if x["Time"] < best:        #compares if the the time of the player is less than 1000(s)
+                best = x["Time"]        #organizes the matches;
+                game = x                #descending
+        games_Time.append(game)         #adds the the match to the list
+        if game in list1:
+            list1.remove(game)      #from here, the code restarts the loop.
+            best = 1000
+            game= {}
+        i+=1
+
+#---------------------------------------------------------------------------------------------------------------------
+
+def sorted_Time():#metodo principal
+    pygame.init()# inicialia los procesos de pygame
+    screen = pygame.display.set_mode([750,600])# se crea un ventana
+    pygame.display.set_caption("Memory")# se le otorga un titulo a la ventana
+    exit = False# variable necesaria para mantener el ciclo donde se realizan las acciones
+    cursor = Cursor()# crea un cursor
+    clock = pygame.time.Clock()#crea un reloj
+    back1 = pygame.image.load("Images/Back.png")  # imports an inmage
+    back2 = pygame.image.load("Images/BackS.png")  # imports an inmage
+    buttonBack = ButtonPy(back1, back2, 600, 530)  # creates a button
+    back = pygame.image.load("Images/backW.jpg").convert()  # imagen de la interfaz
+    back = pygame.transform.scale(back, (750, 600))
+    posX, posY = 0, 0
+    screen.blit(back, (posX, posY))
+    pygame.font.init()
+    fuente = pygame.font.Font(None, 50)
+    fuente2 = pygame.font.Font(None, 30)
+    texto1 = fuente.render('Name', 1, (185, 147, 90))
+    screen.blit(texto1, (10, 25))
+    texto2 = fuente.render('Nick', 1, (185, 147, 90))
+    screen.blit(texto2, (150, 25))
+    texto3 = fuente.render('Score', 1, (185, 147, 90))
+    screen.blit(texto3, (300, 25))
+    texto4 = fuente.render('Time', 1, (185, 147, 90))
+    screen.blit(texto4, (450, 25))
+    texto5 = fuente.render("Status", 1, (185, 147, 90))
+    screen.blit(texto5, (600, 25))
+    cont = 100
+    for x in games_Time:
+        texto6 = fuente2.render(x["Name"],1,(255,255,255))
+        screen.blit(texto6,(10,cont))
+        texto7 = fuente2.render(x["Nick"], 1, (255, 255, 255))
+        screen.blit(texto7, (150, cont))
+        texto8 = fuente2.render(str(x["Score"]), 1, (255, 255, 255))
+        screen.blit(texto8, (330, cont))
+        texto9 = fuente2.render(str(int(x["Time"])), 1, (255, 255, 255))
+        screen.blit(texto9, (450, cont))
+        texto10 = fuente2.render("seg.", 1, (255, 255, 255))
+        screen.blit(texto10, (490, cont))
+        texto11 = fuente2.render(x["Status"], 1, (255, 255, 255))
+        screen.blit(texto11, (640, cont))
+        cont += 30
+
+
+    while exit != True:# this loop is where all the processes are done
+        for event in pygame.event.get():# recorre la lista de los eventos posibles en pygame
+
+            if event.type == pygame.MOUSEBUTTONDOWN:#checks when a button is pressed
+                if cursor.colliderect(buttonBack.rect):
+                    score_Section()
+            if event.type == pygame.QUIT:#needed validation to terminate the process
+                exit = True
+
+        clock.tick(20)#measures the fps
+        cursor.update()# updates the cursor on the screen
+        buttonBack.update(screen, cursor)  # actualiza el boton en pantalla
+        pygame.display.flip()
+        pygame.display.update()#updates the screen
+
+    pygame.quit()# termimates python's proceeses
+    sys.exit()
+
+#---------------------------------------------------------------------------------------------------------------------
+
+def sorted_Score():#metodo principal
+    pygame.init()# inicialia los procesos de pygame
+    screen = pygame.display.set_mode([750,600])# se crea un ventana
+    pygame.display.set_caption("Memory")# se le otorga un titulo a la ventana
+    exit = False# variable necesaria para mantener el ciclo donde se realizan las acciones
+    cursor = Cursor()# crea un cursor
+    clock = pygame.time.Clock()#crea un reloj
+    back1 = pygame.image.load("Images/Back.png")  # imports an inmage
+    back2 = pygame.image.load("Images/BackS.png")  # imports an inmage
+    buttonBack = ButtonPy(back1, back2, 600, 530)  # creates a button
+    back = pygame.image.load("Images/backW.jpg").convert()  # imagen de la interfaz
+    back = pygame.transform.scale(back, (750, 600))
+    posX, posY = 0, 0
+    screen.blit(back, (posX, posY))
+    pygame.font.init()
+    fuente = pygame.font.Font(None, 50)
+    fuente2 = pygame.font.Font(None, 30)
+    texto1 = fuente.render('Name', 1, (185, 147, 90))
+    screen.blit(texto1, (10, 25))
+    texto2 = fuente.render('Nick', 1, (185, 147, 90))
+    screen.blit(texto2, (150, 25))
+    texto3 = fuente.render('Score', 1, (185, 147, 90))
+    screen.blit(texto3, (300, 25))
+    texto4 = fuente.render('Time', 1, (185, 147, 90))
+    screen.blit(texto4, (450, 25))
+    texto5 = fuente.render("Status", 1, (185, 147, 90))
+    screen.blit(texto5, (600, 25))
+    cont = 100
+    games_Score.remove(games_Score[-1])
+    for x in games_Score:
+        texto6 = fuente2.render(x["Name"],1,(255, 255, 255))
+        screen.blit(texto6,(10,cont))
+        texto7 = fuente2.render(x["Nick"], 1, (255, 255, 255))
+        screen.blit(texto7, (150, cont))
+        texto8 = fuente2.render(str(x["Score"]), 1, (255, 255, 255))
+        screen.blit(texto8, (330, cont))
+        texto9 = fuente2.render(str(int(x["Time"])), 1, (255, 255, 255))
+        screen.blit(texto9, (450, cont))
+        texto10 = fuente2.render("seg.", 1, (255, 255, 255))
+        screen.blit(texto10, (490, cont))
+        texto11 = fuente2.render(x["Status"], 1, (255, 255, 255))
+        screen.blit(texto11, (640, cont))
+        cont += 30
+
+
+    while exit != True:# this loop is where all the processes are done
+        for event in pygame.event.get():# recorre la lista de los eventos posibles en pygame
+
+            if event.type == pygame.MOUSEBUTTONDOWN:#checks when a button is pressed
+                if cursor.colliderect(buttonBack.rect):
+                    score_Section()
+            if event.type == pygame.QUIT:#needed validation to terminate the process
+                exit = True
+
+        clock.tick(20)#measures the fps
+        cursor.update()# updates the cursor on the screen
+        buttonBack.update(screen, cursor)  # actualiza el boton en pantalla
+        pygame.display.flip()
+        pygame.display.update()#updates the screen
+
+    pygame.quit()# termimates python's proceeses
+    sys.exit()
+
+#---------------------------------------------------------------------------------------------------------------------
+
+def score_Section():        #main method
+    pygame.init()   # initializes python's processes
+    screen = pygame.display.set_mode([700,500]) # creates a window
+    pygame.display.set_caption("Memory")    # gives the window a title
+    exit = False    # this variable is needed to keep the main processes' loop
+    cursor = Cursor()   # creates the cursor
+    clock = pygame.time.Clock()#creates a clock
+    score1 = pygame.image.load("Images/Score.png")  #imports an inmage
+    score2 = pygame.image.load("Images/ScoreS.png")  #imports an inmage
+    buttonScore = ButtonPy(score1, score2, 250, 170)    #creates a button
+    time1 = pygame.image.load("Images/Time.png")   #imports an inmage
+    time2 = pygame.image.load("Images/TimeS.png")   # imports an inmage
+    buttonTime = ButtonPy(time1, time2, 260, 280)   #creates a button
+    back1 = pygame.image.load("Images/Back.png")  # imports an inmage
+    back2 = pygame.image.load("Images/BackS.png")  # imports an inmage
+    buttonBack = ButtonPy(back1, back2, 500, 400)  # creates a button
+    background = pygame.image.load("Images/backW.jpg").convert()  # imagen de la interfaz
+    background = pygame.transform.scale(background, (700, 500))
+    posX, posY = 0, 0
+    screen.blit(background, (posX, posY))
+
+    while exit != True:# #this loop is where all the processes are done
+        for event in pygame.event.get():# runs the list with the possible events in python
+
+            if event.type == pygame.MOUSEBUTTONDOWN:#valida cuando se presiona un boton
+                if cursor.colliderect(buttonScore.rect):
+                    sorted_Score()
+                elif cursor.colliderect(buttonTime.rect):
+                    sorted_Time()
+                elif cursor.colliderect(buttonBack.rect):
+                    main()
+            if event.type == pygame.QUIT:#validacion necearia para poder cerrar la ventana
+                exit = True
+
+        clock.tick(20)#mide los fps
+        cursor.update()#actualiza el cursor en pantalla
+        buttonScore.update(screen, cursor)#actualiza el boton en pantalla
+        buttonTime.update(screen,cursor)#actualiza el boton en pantalla
+        buttonBack.update(screen, cursor)  # actualiza el boton en pantalla
+        pygame.display.update()#actualiza la pantalla
+
+    pygame.quit()# termina los procesos de pygame
+    sys.exit()
+
+#---------------------------------------------------------------------------------------------------------------------
+
+def main():#metodo principal
+    load_Players_File()
+    load_games_File()
+    games_to_File()
+    list_Score()
+    list_Time()
+    pygame.init()# inicialia los procesos de pygame
+    screen = pygame.display.set_mode([700,500])# se crea un ventana
+    pygame.display.set_caption("Memory")# se le otorga un titulo a la ventana
+    exit = False# variable necesaria para mantener el ciclo donde se realizan las acciones
+    cursor = Cursor()# crea un cursor
+    clock = pygame.time.Clock()#crea un reloj
+    play1 = pygame.image.load("Images/Play.png")#importa un imagen
+    play2 = pygame.image.load("Images/PlayS.png")#importa un imagen
+    buttonPlay = ButtonPy(play1, play2, 273, 148)#crea un boton
+    score1 = pygame.image.load("Images/Stats.png")#se importa una imagen
+    score2 = pygame.image.load("Images/StatsS.png")# se importa una imagen
+    buttonScore = ButtonPy(score1, score2, 250, 262)#se crea un boton
+    back = pygame.image.load("Images/interface.jpeg").convert()  # imagen de la interfaz
+    back = pygame.transform.scale(back, (700, 500))
+    posX, posY = 0, 0
+    screen.blit(back, (posX, posY))
+
+    while exit != True:# this loop is where all the processes are done
+        for event in pygame.event.get():# recorre la lista de los eventos posibles en pygame
+
+            if event.type == pygame.MOUSEBUTTONDOWN:#checks when a button is pressed
+                if cursor.colliderect(buttonPlay.rect):
+                    categoryPlayers()
+                elif cursor.colliderect(buttonScore.rect):
+                    score_Section()
+            if event.type == pygame.QUIT:#needed validation to terminate the process
+                exit = True
+
+        clock.tick(20)#measures the fps
+        cursor.update()# updates the cursor on the screen
+        buttonPlay.update(screen,cursor)    #updates the button on the screen
+        buttonScore.update(screen,cursor)   #updates the button on the screen
+        pygame.display.update()#updates the screen
+
+    pygame.quit()# termimates python's proceeses
+    sys.exit()
+
+main()
