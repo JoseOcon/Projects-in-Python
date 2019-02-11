@@ -1,0 +1,791 @@
+import time
+
+                                            #Administrator's list:
+administrators = [{"Name": "Jose", "ID": "7411", "Password": "1234"},{"Name": "Leandro", "ID": "3004", "Password": "1234"}]
+
+                                #This list contains all the existing users in the dictionary format:
+players = []
+
+        #This list also contains all the users, but in the list format, so its easier to load and save them in the user's fle
+playersFinal = []
+                                            #Wordlist of "b/v/w" words:
+bvw = [{"Word":"Barranco","Incomplete":"_arranco","Answer":"b"},{"Word":"Abatir","Incomplete":"A_atir","Answer":"b"},
+       {"Word": "Olvidar", "Incomplete": "Ol_idar", "Answer": "v"},{"Word":"Viscoso","Incomplete":"_iscoso","Answer":"v"},
+       {"Word": "Agravar", "Incomplete": "Agra_ar", "Answer": "v"},{"Word":"Abduir","Incomplete":"A_duir","Answer":"b"},
+       {"Word": "Vudú", "Incomplete": "_udú", "Answer": "v"},{"Word":"Abano","Incomplete":"A_ano","Answer":"b"},
+       {"Word": "Biopsia", "Incomplete": "_iopsia", "Answer": "b"},{"Word":"Viabilidad","Incomplete":"Via_ilidad","Answer":"b"},
+       {"Word": "Burro", "Incomplete": "_urro", "Answer": "b"},{"Word":"Converger","Incomplete":"Con_erger","Answer":"v"},
+       {"Word": "Exhibir", "Incomplete": "Exhi_ir", "Answer": "b"},{"Word":"Abata","Incomplete":"A_ata","Answer":"b"},
+       {"Word": "Visco", "Incomplete": "_isco", "Answer": "v"},{"Word":"Avenida","Incomplete":"A_enida","Answer":"v"},
+       {"Word": "Bicicleta", "Incomplete": "_icicleta", "Answer": "b"},{"Word":"Convención","Incomplete":"Con_ención","Answer":"v"},
+       {"Word": "Bilateral", "Incomplete": "_ilateral", "Answer": "b"},{"Word":"Vaca","Incomplete":"_aca","Answer":"v"},
+       {"Word": "Viejo", "Incomplete": "_iejo", "Answer": "v"},{"Word":"Intervenir","Incomplete":"Inter_enir","Answer":"v"},
+       {"Word": "Ballena", "Incomplete": "_allena", "Answer": "b"},{"Word":"Barco","Incomplete":"_arco","Answer":"b"},
+       {"Word": "Viceversa", "Incomplete": "_ice_ersa", "Answer": "v"}]
+
+                                            #Wordlist of "g/j" words:
+gj = [{"Word":"Tejer","Incomplete":"Te_er","Answer":"j"},{"Word":"Ajeno","Incomplete":"A_eno","Answer":"j"},
+      {"Word": "Anclaje", "Incomplete": "Anca_e", "Answer": "j"},{"Word":"Artilugio","Incomplete":"Artilu_io","Answer":"g"},
+      {"Word": "Coger", "Incomplete": "Co_er", "Answer": "g"},{"Word":"Vendaje","Incomplete":"Venda_e","Answer":"j"},
+      {"Word": "Hereje", "Incomplete": "Here_e", "Answer": "j"},{"Word":"Afligir","Incomplete":"Afli_ir","Answer":"g"},
+      {"Word": "Elegible", "Incomplete": "Ele_ible", "Answer": "g"},{"Word":"Indigestión","Incomplete":"Indi_estión","Answer":"g"},
+      {"Word": "Montaje", "Incomplete": "Monta_e", "Answer": "j"},{"Word":"Ungir","Incomplete":"Un_ir","Answer":"g"},
+      {"Word": "Esqueje", "Incomplete": "Esque_e", "Answer": "j"},{"Word":"Jerarquía","Incomplete":"_erarquía","Answer":"j"},
+      {"Word": "Fingir", "Incomplete": "Fin_ir", "Answer": "g"},{"Word":"Crujir","Incomplete":"Cru_ir","Answer":"j"},
+      {"Word": "Geometría", "Incomplete": "_eometría", "Answer": "g"},{"Word":"Resurgir","Incomplete":"Resur_ir","Answer":"g"},
+      {"Word": "Embalaje", "Incomplete": "Emabala_e", "Answer": "j"},{"Word":"Brujería","Incomplete":"Bru_ería","Answer":"j"},
+      {"Word": "Refrigerar", "Incomplete": "Refri_erar", "Answer": "g"},{"Word":"Corregir","Incomplete":"Corre_ir","Answer":"g"},
+      {"Word": "Sumergir", "Incomplete": "Sumer_ir", "Answer": "g"},{"Word":"Aligerar","Incomplete":"Ali_erar","Answer":"g"},
+      {"Word": "Contagiar", "Incomplete": "Conta_iar", "Answer": "g"},{"Word":"Acoger","Incomplete":"Aco_er","Answer":"g"}]
+
+                                            #Wordlist of "ll/y" words:
+lly = [{"Word":"Yema","Incomplete":"_ema","Answer":"y"},{"Word":"Ella","Incomplete":"E_a","Answer":"ll"},
+       {"Word": "Callado", "Incomplete": "Ca_ado", "Answer": "ll"},{"Word":"Falla","Incomplete":"Fa_a","Answer":"ll"},
+       {"Word": "Vajilla", "Incomplete": "Vaji_a", "Answer": "ll"},{"Word":"Oyó","Incomplete":"O_ó","Answer":"y"},
+       {"Word": "Bolla", "Incomplete": "Bo_a", "Answer": "ll"},{"Word":"Semilla","Incomplete":"Semi_a","Answer":"ll"},
+       {"Word": "Arrollo", "Incomplete": "Arro_o", "Answer": "ll"},{"Word":"Yacer","Incomplete":"_acer","Answer":"y"},
+       {"Word": "Hallo", "Incomplete": "Ha_o", "Answer": "ll"}, {"Word":"Yeso","Incomplete":"_eso","Answer":"y"},
+       {"Word": "Yoga", "Incomplete": "_oga", "Answer": "y"},{"Word":"Yugoslavia","Incomplete":"_ugoslavia","Answer":"y"},
+       {"Word": "Hulla", "Incomplete": "Hu_a (mineral)", "Answer": "ll"},{"Word":"Abollar","Incomplete":"Abo_ar","Answer":"ll"},
+       {"Word": "Sillería", "Incomplete": "Si_ería", "Answer": "ll"},{"Word":"Ensayar","Incomplete":"Ensa_ar","Answer":"y"},
+       {"Word": "Yerba", "Incomplete": "_erba", "Answer": "y"}, {"Word":"Yugular","Incomplete":"_ugular","Answer":"y"},
+       {"Word": "Yuxtapuesta", "Incomplete": "_uxtapuesta", "Answer": "y"},{"Word":"Casa","Incomplete":"Ca_a","Answer":"s"},
+       {"Word": "Paella", "Incomplete": "Pae_a", "Answer": "ll"},{"Word":"Yak","Incomplete":"_ak","Answer":"y"},
+       {"Word": "Yunque", "Incomplete": "_unque", "Answer": "y"},{"Word":"Plebeyo","Incomplete":"Plebe_o","Answer":"y"},
+       {"Word": "Ahuyentar", "Incomplete": "Ahu_entar", "Answer": "y"}]
+
+                                            #Wordlist of "c/s/z" words:
+csz = [{"Word":"Casa","Incomplete":"Ca_a","Answer":"s"},{"Word":"Camisa","Incomplete":"Cami_a","Answer":"s"},
+       {"Word":"Estruendo","Incomplete":"E_struendo","Answer":"s"},{"Word":"Pozo","Incomplete":"Po_o","Answer":"z"},
+       {"Word": "Palacio", "Incomplete": "Pala_io", "Answer": "c"},{"Word":"Cigüeña","Incomplete": "_igüeña","Answer":"c"},
+       {"Word": "Oso", "Incomplete": "O_o", "Answer": "s"},{"Word":"Sombrilla","Incomplete":"_ombrilla","Answer":"s"},
+       {"Word": "Misa", "Incomplete": "Mi_a", "Answer": "s"},{"Word":"Paso","Incomplete":"Pa_o","Answer":"s"},
+       {"Word": "Plaza", "Incomplete": "Pla_a", "Answer": "z"},{"Word":"Cinco","Incomplete":"_inco","Answer":"c"},
+       {"Word": "Arroz", "Incomplete": "Arro_", "Answer": "z"},{"Word":"Zorro","Incomplete":"_orro","Answer":"z"},
+       {"Word": "Zapote", "Incomplete": "_apote", "Answer": "z"},{"Word":"Simposio","Incomplete":"_imposio","Answer":"s"},
+       {"Word": "Evasivas", "Incomplete": "Eva_ivas", "Answer": "s"},{"Word":"Convulsivo","Incomplete":"Convul_ivo","Answer":"s"},
+       {"Word": "Lascivo", "Incomplete": "Las_ivo", "Answer": "c"},{"Word":"Ocio","Incomplete":"O_io","Answer":"c"},
+       {"Word": "Socio", "Incomplete": "So_io", "Answer": "c"},{"Word":"Nocivo","Incomplete":"No_ivo","Answer":"c"},
+       {"Word": "Balazo", "Incomplete": "Bala_o", "Answer": "z"},{"Word":"Calabozo","Incomplete":"Calabo_o","Answer":"z"},
+       {"Word": "Carroza", "Incomplete": "Carro_a", "Answer": "z"}]
+
+                                            #Wordlist for the "tildadas" words:
+tildadas = [{"Word":"Menú","Incomplete":"Menu","Answer":"4"},{"Word":"Estoico", "Incomplete":"Estoico","Answer":"-1"},
+            {"Word": "Imagen", "Incomplete": "Imagen", "Answer": "-1"},{"Word":"Joven", "Incomplete":"Joven","Answer":"-1"},
+            {"Word": "Mamón", "Incomplete": "Mamon", "Answer": "4"},{"Word":"Heroico", "Incomplete":"Heroico","Answer":"-1"},
+            {"Word": "Tonalá", "Incomplete": "Tonala", "Answer": "6"},{"Word":"París", "Incomplete":"Paris","Answer":"4"},
+            {"Word": "Nuez", "Incomplete": "Nuez", "Answer": "-1"},{"Word":"Camión", "Incomplete":"Camion","Answer":"5"},
+            {"Word": "Solo", "Incomplete": "Solo", "Answer": "-1"},{"Word":"Dio", "Incomplete":"Dio","Answer":"-1"},
+            {"Word": "Examen", "Incomplete": "Examen", "Answer": "-1"},{"Word":"Guión", "Incomplete":"Guion","Answer":"4"},
+            {"Word": "Continuo", "Incomplete": "Continuo", "Answer": "-1"},{"Word":"Caracteres", "Incomplete":"Caracteres","Answer":"-1"},
+            {"Word": "Área", "Incomplete": "Area", "Answer": "1"},{"Word":"Aquel", "Incomplete":"Aquel","Answer":"-1"},
+            {"Word": "Álbum", "Incomplete": "Album", "Answer": "1"},{"Word":"Orión", "Incomplete":"Orion","Answer":"4"},
+            {"Word": "Junín", "Incomplete": "Junin", "Answer": "4"},{"Word":"Ámbar", "Incomplete":"Ambar","Answer":"1"},
+            {"Word": "Fue", "Incomplete": "Fue", "Answer": "-1"},{"Word":"Océano", "Incomplete":"Oceano","Answer":"3"},
+            {"Word": "Vio", "Incomplete": "Vio", "Answer": "-1"},{"Word": "Este", "Incomplete": "Este (demostrativo)", "Answer": "-1"},
+            {"Word":"Anís", "Incomplete":"Anis","Answer": "3"},{"Word": "Cárcel", "Incomplete": "Carcel", "Answer": "2"},
+            {"Word":"Ábaco", "Incomplete":"Abaco","Answer":"1"}]
+
+'''------------------------------------------------------------------------------------------------------------------'''
+
+def load():         #This method loads the users from the list "playersFinal" to "players"
+    players.clear()
+    for x in playersFinal:
+        user = {}
+        user["Name"] = x[0]
+        user["Nickname"] = x[1]
+        user["ID"] = x[2]
+        user["Password"] = x[3]
+        user["Matches"] = int(float(x[4]))
+        user["Score"] = int(float(x[5]))
+        players.append(user)
+
+'''------------------------------------------------------------------------------------------------------------------'''
+
+def players_Final():        #This method loads the data from the user's file
+    playersFinal.clear()
+    file = open("players","r")
+    for x in file:
+        list1 = x.split(" ")
+        list2 = list1[-1].split("\n")
+        del list1[-1]
+        list1.append(list2[0])
+        playersFinal.append(list1)
+    file.close()
+
+'''------------------------------------------------------------------------------------------------------------------'''
+
+def refresh():      #This funtiction saves the users to the user's file.
+    file = open("admins","w")
+    file.write("")
+    file.close()
+    file2 = open("admins","w")
+    for y in administrators:
+        nameA = y["Name"]
+        idA = y["ID"]
+        passwordA = y["Password"]
+        file2.write(nameA+" "+idA+" "+passwordA+"\n")
+    file2.close()
+    file = open("players", "w")
+    file.write("")
+    file.close()
+    file2 = open("players","w")
+    for x in players:
+        name = x["Name"]
+        nick = x["Nickname"]
+        id = x["ID"]
+        password = x["Password"]
+        matches = x["Matches"]
+        score = x["Score"]
+        file2.write(name + " " + nick + " " + id + " " + password + " " + str(matches) + " " + str(score) + "\n")
+    file.close()
+
+'''------------------------------------------------------------------------------------------------------------------'''
+
+def loadAdmins():
+    administrators.clear()
+    file = open("admins","r")
+    for x in file:
+        list1 = x.split(" ")
+        list2 = list1[-1].split("\n")
+        del list1[-1]
+        list1.append(list2[0])
+        admin = {}
+        admin["Name"] = list1[0]
+        admin["ID"] = list1[1]
+        admin["Password"] = list1[2]
+        administrators.append(admin)
+    file.close()
+
+
+loadAdmins()
+
+'''------------------------------------------------------------------------------------------------------------------'''
+
+def categoryBVW(id):        #This is the method that runs the b/v/w category.
+    print("------------------------------------------------")
+    for i in players:
+        if id == i["ID"]:
+            for x in bvw:
+                print("------------------------------------------------")
+                print(i["Nickname"], "Matches: ", i["Matches"], " Score: ", i["Score"])
+                print(x["Incomplete"])
+                start = time.time()
+                y = input("Type the letter that completes the word correctly: ")
+                finish = time.time()
+                totalTime = round(finish - start, 0)
+                if totalTime <= 8:
+                    if y == x["Answer"]:
+                        i["Score"] += 2
+                        print("Good")
+                    else:
+                        if i["Score"] > 0:
+                            i["Score"] -= 1
+                            print("Incorrect answer.")
+                        else:
+                            print("Incorrect answer.")
+                            gameOptions(id)
+                else:
+                    if y == x["Answer"]:
+                        if i["Score"] > 0:
+                            i["Score"] -= 1
+                            print("Correct answer, but you reached your time limit.")
+                        else:
+                            print("Correct answer and you reached your time limit.")
+                            gameOptions(id)
+                    else:
+                        if i["Score"] > 0:
+                            i["Score"] -= 1
+                            print("Incorrect answer and you reached your time limit.")
+                        else:
+                            print("Incorrect answer and you reached your time limit.")
+                            gameOptions(id)
+                        print()
+            print("It's over.")
+            refresh()
+            players_Final()
+            load()
+            gameOptions(id)
+
+'''------------------------------------------------------------------------------------------------------------------'''
+
+def categoryGJ(id):                 #This is the method that runs the g/j category.
+    print("------------------------------------------------")
+    for i in players:
+        if id == i["ID"]:
+            for x in gj:
+                print("------------------------------------------------")
+                print(i["Nickname"], "Matches: ", i["Matches"], " Score: ", i["Score"])
+                print(x["Incomplete"])
+                start = time.time()
+                y = input("Type the letter that completes the word correctly: ")
+                finish = time.time()
+                totalTime = round(finish - start, 0)
+                if totalTime <= 8:
+                    if y == x["Answer"]:
+                        i["Score"] += 2
+                        print("Good")
+                    else:
+                        if i["Score"] > 0:
+                            i["Score"] -= 1
+                            print("Incorrect answer.")
+                        else:
+                            print("Incorrect answer.")
+                            gameOptions(id)
+                else:
+                    if y == x["Answer"]:
+                        if i["Score"] > 0:
+                            i["Score"] -= 1
+                            print("Correct answer, but you reached your time limit.")
+                        else:
+                            print("Correct answer and you reached your time limit.")
+                            gameOptions(id)
+                    else:
+                        if i["Score"] > 0:
+                            i["Score"] -= 1
+                            print("Incorrect answer and you reached your time limit.")
+                        else:
+                            print("Incorrect answer and you reached your time limit.")
+                            gameOptions(id)
+                        print()
+            print("It's over.")
+            refresh()
+            players_Final()
+            load()
+            gameOptions(id)
+
+'''------------------------------------------------------------------------------------------------------------------'''
+
+def categoryLLY(id):                #This is the method that runs the ll/y category.
+    print("------------------------------------------------")
+    for i in players:
+        if id == i["ID"]:
+            for x in lly:
+                print("------------------------------------------------")
+                print(i["Nickname"], "Matches: ", i["Matches"], " Score: ", i["Score"])
+                print(x["Incomplete"])
+                start = time.time()
+                y = input("Type the letter that completes the word correctly: ")
+                finish = time.time()
+                totalTime = round(finish - start, 0)
+                if totalTime <= 8:
+                    if y == x["Answer"]:
+                        i["Score"] += 2
+                        print("Good")
+                    else:
+                        if i["Score"] > 0:
+                            i["Score"] -= 1
+                            print("Incorrect answer.")
+                        else:
+                            print("Incorrect answer.")
+                            gameOptions(id)
+                else:
+                    if y == x["Answer"]:
+                        if i["Score"] > 0:
+                            i["Score"] -= 1
+                            print("Correct answer, but you reached your time limit.")
+                        else:
+                            print("Correct answer and you reached your time limit.")
+                            gameOptions(id)
+                    else:
+                        if i["Score"] > 0:
+                            i["Score"] -= 1
+                            print("Incorrect answer and you reached your time limit.")
+                        else:
+                            print("Incorrect answer and you reached your time limit.")
+                            gameOptions(id)
+                        print()
+            print("It's over.")
+            refresh()
+            players_Final()
+            load()
+            gameOptions(id)
+
+'''------------------------------------------------------------------------------------------------------------------'''
+
+def categoryCSZ(id):                    #This is the method that runs the c/s/z category.
+    print("------------------------------------------------")
+    for i in players:
+        if id == i["ID"]:
+            for x in csz:
+                print("------------------------------------------------")
+                print(i["Nickname"], "Matches: ", i["Matches"], " Score: ", i["Score"])
+                print(x["Incomplete"])
+                start = time.time()
+                y = input("Type the letter that completes the word correctly: ")
+                finish = time.time()
+                totalTime = round(finish - start, 0)
+                if totalTime <= 8:
+                    if y == x["Answer"]:
+                        i["Score"] += 2
+                        print("Good")
+                    else:
+                        if i["Score"] > 0:
+                            i["Score"] -= 1
+                            print("Incorrect answer.")
+                        else:
+                            print("Incorrect answer.")
+                            gameOptions(id)
+                else:
+                    if y == x["Answer"]:
+                        if i["Score"] > 0:
+                            i["Score"] -= 1
+                            print("Correct answer, but you reached your time limit.")
+                        else:
+                            print("Correct answer and you reached your time limit.")
+                            gameOptions(id)
+                    else:
+                        if i["Score"] > 0:
+                            i["Score"] -= 1
+                            print("Incorrect answer and you reached your time limit.")
+                        else:
+                            print("Incorrect answer and you reached your time limit.")
+                            gameOptions(id)
+                        print()
+            print("It's over.")
+            refresh()
+            players_Final()
+            load()
+            gameOptions(id)
+
+'''------------------------------------------------------------------------------------------------------------------'''
+
+def tildarPalabras(id):         #This is the method that runs the "'tildar' words "  category.
+    print("------------------------------------------------")
+    for i in players:
+        if id == i["ID"]:
+            for x in tildadas:
+                print(i["Nickname"],"Matches: ",i["Matches"]," Score: ",i["Score"])
+                print(x["Incomplete"])
+                start = time.time()
+                option = input("\nEnter the number of the letter that must be 'tildada' (for instance 2): \n")
+                finish = time.time()
+                totalTime = round(finish-start,0)
+                if totalTime <= 15:
+                    if x["Answer"] == option:
+                        i["Score"] += 2
+                        print("Good")
+                    else:
+                        if i["Score"] > 0:
+                            i["Score"] -= 1
+                            print("Incorrect answer.")
+                        else:
+                            print("Incorrect answer.")
+                            gameOptions(id)
+                else:
+                    if x["Answer"] == option:
+                        if i["Score"] > 0:
+                            i["Score"] -= 1
+                            print("Correct answer, but you reached your time limit.")
+                        else:
+                            print("Correct answer, but you reached your time limit.")
+                            gameOptions(id)
+                    else:
+                        if i["Score"] > 0:
+                            i["Score"] -= 1
+                            print("Incorrect answer and you reached your time limit.")
+                        else:
+                            print("Incorrect answer and you reached your time limit.")
+                            gameOptions(id)
+            print("It's over.")
+            refresh()
+            players_Final()
+            load()
+            menuPlayer(id)
+
+'''------------------------------------------------------------------------------------------------------------------'''
+
+def adviceComplete():          #This method warns the user about the time he/she has in the complete section.
+
+    print("\n             |||||||||||||||||||||| ATTENTION! ||||||||||||||||||||||\n"
+          "In this section of the game, you'll have 8 seconds to answer each word. If you don't answer within 8 seconds,\n"
+          "although your answer's correct, you won't have the points. So take that on mind! ;)")
+    q = input("\n(Press the Enter key to continue)")
+
+
+'''------------------------------------------------------------------------------------------------------------------'''
+
+
+def adviceTildar():           #This method warns the user about the time he/she has in the "Tildar" section.
+
+    print("\n             |||||||||||||||||||||| ATTENTION! ||||||||||||||||||||||\n"
+          "In this section of the game, you'll have 12 seconds to answer each word. If you don't answer within 10,\n"
+          "although your answer's correct, you won't have the points. So take that on mind! ;)")
+    u = input("\n(Press the Enter key to continue)")
+tildarPalabras(id)
+
+'''------------------------------------------------------------------------------------------------------------------'''
+
+def gameOptions(id):                #This method runs the options of the game itself.
+    print("------------------------------------------------")
+    print("Select a category:\n1) B/V/W.\n2) G/J.\n3) LL/Y.\n4) C/Z/S.\n5) Exit. ")
+    option = input("Enter your option: ")
+    if option == "1":
+        categoryBVW(id)
+    elif option == "2":
+        categoryGJ(id)
+    elif option == "3":
+        categoryLLY(id)
+    elif option == "4":
+        categoryCSZ(id)
+    elif option == "5":
+        print("Bye")
+        menuPlayer(id)
+    else:
+        print("Invalid input. Please try again with a valid option.")
+        gameOptions(id)
+
+'''------------------------------------------------------------------------------------------------------------------'''
+
+def average(id):                        #Calculates and shows the game's average
+    print("------------------------------------------------")
+    counter = 0
+    for x in playersFinal:
+        counter += int(x[4])
+    finalAverage = counter / len(players)
+    print("The average is: " + str(finalAverage))
+    z = input("Enter 1 to exit: ")
+
+    for a in players:
+        if id == a["ID"]:
+            if z == "1":
+                menuPlayer(id)
+            else:
+                print("Invalid input. Please try again with a valid option.")
+                average(id)
+
+    for b in administrators:
+        if id == b["ID"]:
+            if z == "1":
+                menuAdmin(id)
+            else:
+                print("Invalid input. Please try again with a valid option.")
+                average(id)
+
+'''------------------------------------------------------------------------------------------------------------------'''
+
+def last3(id):              #This method selects the last three users according to their scores
+
+    players1 = playersFinal[:]
+    last = 10000000
+    pos1 = []
+    pos2 = []
+    pos3 = []
+    if int(players1[0][5]) < last:
+        pos1 = players1[0]
+        for x in players1:
+            if int(x[5]) < int(pos1[5]):
+                pos1 = x
+        players1.remove(pos1)
+
+    if int(players1[0][5]) < last:
+        pos2 = players1[0]
+        for y in players1:
+            if int(y[5]) < int(pos2[5]):
+                pos2 = y
+        players1.remove(pos2)
+
+    if int(players1[0][5]) < last:
+        pos3 = players1[0]
+        for z in players1:
+            if int(z[5]) < int(pos3[5]):
+                pos3 = z
+        players1.remove(pos3)
+
+    print(
+        "El antepenultimo lugar corresponde a: " + pos3[0] + ", Nick: " + pos3[1] + ", ID: " + pos3[2] + ", Matches: " +
+        pos3[4] + ", Score: " + pos3[5])
+    print("El penultimo lugar corresponde a: " + pos2[0] + ", Nick: " + pos2[1] + ", ID: " + pos2[2] + ", Matches: " +
+          pos2[4] + ", Score: " + pos2[5])
+    print(
+        "El ultimo lugar corresponde a: " + pos1[0] + ", Nick: " + pos1[1] + ", ID: " + pos1[2] + ", Matches: " + pos1[
+            4] + ", Score: " + pos1[5])
+    a = input("Enter 1 to exit: ")
+    if a == "1":
+        menuAdmin(id)
+    else:
+        print("Invalid input. Please try again with a valid option.")
+        last3(id)
+
+'''------------------------------------------------------------------------------------------------------------------'''
+
+def top10(id):                  #This method selects the top-ten users according to their scores.
+    print("------------------------------------------------")
+    players1 = playersFinal[:]
+    best = 0
+    pos = []
+    finalList = []
+    i = 0
+    while i < 10:
+        if int(players1[0][5]) > best:
+            pos = players1[0]
+        for x in players1:
+            if int(x[5]) > int(pos[5]):
+                pos = x
+        players1.remove(pos)
+        finalList.append(pos)
+        pos = []
+        i += 1
+    cont = 1
+    for a in finalList:
+        print(
+            str(cont) + ") Nombre: " + a[0] + ", Nick: " + a[1] + ", ID: " + a[2] + ", Matches: " + a[4] + ", Score: " +
+            a[5])
+        cont += 1
+    e = input("Enter 1 to exit: ")
+    if e == "1":
+        menuAdmin(id)
+    else:
+        print("Invalid input. Please try again with a valid option.")
+        top10(id)
+
+'''------------------------------------------------------------------------------------------------------------------'''
+
+def listPlayers(id):                    #Shows the player's list
+    print("------------------------------------------------")
+    for x in playersFinal:
+        print("Name: " + x[0] + " Nickname: " + x[1] + " ID: " + x[2] + " Matches: " + x[4] + " Score: " + x[5])
+    y = input("Enter 1 to exit: ")
+
+    for z in players:
+        if id == z["ID"]:
+            if y == "1":
+                menuPlayer(id)
+            else:
+                print("Invalid input. Please try again with a valid option.")
+                listPlayers(id)
+
+    for a in administrators:
+        if id == a["ID"]:
+            if id == a["ID"]:
+                if y == "1":
+                    menuAdmin(id)
+                else:
+                    print("Invalid input. Please try again with a valid option.")
+                    listPlayers(id)
+
+'''------------------------------------------------------------------------------------------------------------------'''
+
+def modifyNick(id):                     #This method changes the players' Nickmane
+    print("------------------------------------------------")
+    newNick = input("Enter your new nickname: ")
+    for x in players:
+        if id == x["ID"]:
+            x["Nickname"] = newNick
+            print("Your nickname was changed successfully.")
+            refresh()
+            players_Final()
+            load()
+            menuPlayer(id)
+
+'''------------------------------------------------------------------------------------------------------------------'''
+
+def deleteUser(id):                     #This method deletes the user
+    print("------------------------------------------------")
+    idE = input("Enter the user´s ID you want delete: ")
+    for x in administrators:
+        if idE == x["ID"]:
+            administrators.remove(x)
+            refresh()
+            players_Final()
+            load()
+            print("The user has been successfully deleted.")
+            menuAdmin(id)
+
+    for y in players:
+        if idE == y["ID"]:
+            players.remove(y)
+            refresh()
+            players_Final()
+            load()
+            print("The user has been successfully deleted.")
+            menuAdmin(id)
+
+    print("No existe ningun usuario con el ID:",idE)
+    menuAdmin(id)
+
+'''------------------------------------------------------------------------------------------------------------------'''
+
+def menuAdmin(id):              #This method allows the user to perform the options of an administrator
+    print("------------------------------------------------")
+    print("Welcome. What do you want to do?\n1) Delete user.\n2) List of players.\n3) Top 10.\n4) Last 3 places.\n5) Average.\n6) Exit.")
+    option = input("Enter your option: ")
+
+    if option == "1":
+        deleteUser(id)
+    elif option == "2":
+        listPlayers(id)
+    elif option == "3":
+        top10(id)
+    elif option == "4":
+        last3(id)
+    elif option == "5":
+        average(id)
+    elif option == "6":
+        print("Bye")
+        mainMenu()
+    else:
+        print("Invalid input. Please try again with a valid option.")
+        menuAdmin(id)
+
+'''------------------------------------------------------------------------------------------------------------------'''
+
+def menuPlayer(id):                     #This method allows the user to perform the options of an player
+    print("------------------------------------------------")
+    print("Welcome. What do you want to do?\n1) Play.\n2) Modify nickname.\n3) List of players.\n4) Exit.")
+    option = input("Enter your option: ")
+
+    if option == "1":
+        print("------------------------------------------------")
+        print("Wich category do you want to play?\n1) Complete.\n2) 'Tildar palabras'.")        #The word "tildar" doesn't exist in English
+        option2 = input("Enter your option: ")
+        if option2 == "1":
+            for x in players:
+                if id == x["ID"]:
+                    x["Matches"] += 1
+            adviceComplete()
+            gameOptions(id)
+        elif option2 == "2":
+            for x in players:
+                if id == x["ID"]:
+                    x["Matches"] += 1
+            adviceTildar()
+            tildarPalabras(id)
+        else:
+            print("Invalid input. Please try again with a valid option.")
+            menuPlayer(id)
+    elif option == "2":
+        modifyNick(id)
+    elif option == "3":
+        listPlayers(id)
+    elif option == "4":
+        mainMenu()
+    else:
+        print("Invalid input. Please try again with a valid option.")
+        menuPlayer(id)
+
+'''------------------------------------------------------------------------------------------------------------------'''
+
+def signin():       #This method allows the user to sign in.
+    players_Final()
+    load()
+    print("------------------------------------------------")
+    newUser= {"Name": "","Nickname": "", "ID": 0, "Password": "", "Matches": 0, "Score": 0}
+    newUser["Name"] = input("Enter your name: ")
+    newUser["ID"] = input("Enter your ID: ")
+
+    for y in administrators:
+        if newUser["ID"] == y["ID"]:
+            print("The ID has already been used. Please use a different one.")
+            mainMenu()
+
+    for z in players:
+        if newUser["ID"] == z["ID"]:
+            print("The ID has already been used. Please use a different one.")
+            mainMenu()
+
+    newUser["Password"] = input("Enter your password: ")
+    print("What's your rol?\n"
+          "1)   Admin.\n"
+          "2)   Player.")
+    option = input("Your rol: ")
+
+    if option == "1":
+        print("For security reasons, you must have the approval of other admin before signing as such.")
+        id = input("Enter the admin ID: ")
+        for x in administrators:
+            if id == x["ID"]:
+                i = 0
+                attempts = 2
+                while i < 3:
+                    password = input("Enter the admin password: ")
+                    if password == x["Password"]:
+                        administrators.append(newUser)
+                        refresh()
+                        players_Final()
+                        load()
+                        print("The user was created successfully.")
+                        mainMenu()
+                    print("The password is incorrect. Try again. Attempts: ",attempts)
+                    i += 1
+                    attempts -= 1
+                print("you could not sign in. The user could not be registered.")
+                mainMenu()
+        print ("The user doesn't exist.")
+        mainMenu()
+
+    elif option == "2":
+        newUser["Nickname"] = input("Enter your Nickname ")
+        players.append(newUser)
+        refresh()
+        players_Final()
+        load()
+        print("The user was created successfully.")
+        mainMenu()
+
+    else:
+        print("Invalid input. Please try again with a valid option")
+        mainMenu()
+
+'''------------------------------------------------------------------------------------------------------------------'''
+
+def login():    #Allows the user to log in.
+    print("------------------------------------------------")
+    players_Final()
+    load()
+    id = input("Enter the your ID: ")
+    for x in administrators:
+        if id == x["ID"]:
+            i = 0
+            attempts = 2
+            while i < 3:
+                password = input("Enter the admin password: ")
+                if password == x["Password"]:
+                    print("------------------------------------------------")
+                    print("Welcome ",x["Name"])
+                    menuAdmin(id)
+                print("The password is incorrect. Try again. Attempts: ", attempts)
+                i += 1
+                attempts -= 1
+            print("you could not sign in.")
+            mainMenu()
+
+    for y in players:
+        if id == y["ID"]:
+            i = 0
+            attempts = 2
+            while i < 3:
+                password = input("Enter your password: ")
+                if password == y["Password"]:
+                    print("------------------------------------------------")
+                    print("Welcome ", y["Nickname"])
+                    menuPlayer(id)
+                print("The password is incorrect. Try again. Attempts: ", attempts)
+                i += 1
+                attempts -= 1
+            print("you could not sign in.")
+            mainMenu()
+
+    print("The user doesn't exist.")
+    mainMenu()
+
+'''------------------------------------------------------------------------------------------------------------------'''
+
+def mainMenu():     #This is the main menu. Here you can sign in or log in.
+    print("------------------------------------------------")
+    print(" ||||||||||||||||||| Welcome to the Ortographic Game!!  |||||||||||||||||||\n"
+          "1)  Login\n"
+          "2)  Sign in")
+    x = input("Choose your option: ")
+    if x == "1":
+        loadAdmins()
+        login()
+    elif x == "2":
+        loadAdmins()
+        signin()
+    else:
+        print("Invalid input. Please try again with a valid option")
+        mainMenu()
+
+
+mainMenu()
